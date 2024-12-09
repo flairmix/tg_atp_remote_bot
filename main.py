@@ -1,147 +1,130 @@
 import os
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
+from dotenv import load_dotenv
+from datetime import datetime
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, ForceReply
 from telegram.ext import (
-    ApplicationBuilder,
+    Application,
     CommandHandler,
     MessageHandler,
     ConversationHandler,
+    CallbackContext,
     ContextTypes,
     filters,
 )
-from dotenv import load_dotenv
-from datetime import datetime
 
-# Load environment variables from .env file
+import logging
+
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
 load_dotenv()
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+CHAT_ID = int(os.getenv('CHAT_ID'))
 
-# Retrieve the bot token and admin chat ID from environment variables
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_CHAT_ID = os.getenv("ADMIN_CHAT_ID")
+# Опции для выбора
+STATUS_OPTIONS = ['Remote', 'Sick', 'Vacation', 'Emergency']
+SECOND_MENU_OPTIONS = STATUS_OPTIONS + ['Cancel']
 
-# Check if BOT_TOKEN and ADMIN_CHAT_ID are set
-if not BOT_TOKEN or not ADMIN_CHAT_ID:
-    raise ValueError("BOT_TOKEN and ADMIN_CHAT_ID must be set in the .env file.")
+# Состояния диалога
+START, CHOOSING, NAME, REASON = range(4)
 
-# Define states for ConversationHandler
-SELECT_OPTION, GET_REASON, GET_SHORTNAME = range(3)
 
-# Menu options
-menu_options = [
-    [KeyboardButton("Start")],
-    [KeyboardButton("Remote"), KeyboardButton("Sick")],
-    [KeyboardButton("Vacation"), KeyboardButton("Emergency")],
-    [KeyboardButton("Shortname")],
-]
 
-# Start command handler
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reply_markup = ReplyKeyboardMarkup(
-        keyboard=menu_options, one_time_keyboard=True, resize_keyboard=True
+# Функция для обработки команды /start
+async def start(update: Update, context: CallbackContext) -> int:
+    # Создаем клавиатуру с одной кнопкой: Start
+    menu_keyboard = [[KeyboardButton('Start')]]
+    menu_reply_markup = ReplyKeyboardMarkup(menu_keyboard, resize_keyboard=True, one_time_keyboard=True)
+
+    await update.message.reply_text(
+        "Добро пожаловать! Нажмите 'Start' для продолжения.",
+        reply_markup=menu_reply_markup
     )
-    await update.message.reply_text("Please choose an option:", reply_markup=reply_markup)
-    return SELECT_OPTION
 
-# Handle menu selection
-async def select_option(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    selected_option = update.message.text
-    context.user_data["selected_option"] = selected_option
-    if selected_option == "Shortname":
-        await update.message.reply_text("Please provide your shortname:")
-        return GET_SHORTNAME
-    elif selected_option == "Start":
-        await start(update, context)
-        return SELECT_OPTION
+    return START
+
+# Функция для обработки выбора опции из второго меню
+async def second_menu_choice(update: Update, context: CallbackContext) -> int:
+    user_second_menu_choice = update.message.text
+    if user_second_menu_choice == 'Start':
+        # Переходим к выбору статуса
+        status_keyboard = [[KeyboardButton(option)] for option in STATUS_OPTIONS]
+        cancel_button = [[KeyboardButton('Cancel')]]
+        status_reply_markup = ReplyKeyboardMarkup(status_keyboard + cancel_button, one_time_keyboard=True)
+
+        await update.message.reply_text(
+            "Выберите статус:", reply_markup=status_reply_markup
+        )
+
+        return CHOOSING
     else:
-        await update.message.reply_text("Please provide a reason or message:")
-        return GET_REASON
+        await update.message.reply_text("Неверная команда. Попробуйте еще раз.")
+        return START
 
-# Handle shortname input
-async def get_shortname(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    shortname = update.message.text
-    user = update.message.from_user
-    username = f"@{user.username}" if user.username else user.full_name
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Message to admin
-    admin_message = (
-        f"**Notification**\n\n"
-        f"**User**: {username}"
-        f"**Shortname**: {shortname}"
-        f"**Date and Time**: {current_time}"
-    )
-
-    # Send message to admin
-    await context.bot.send_message(
-        chat_id=int(ADMIN_CHAT_ID),
-        text=admin_message,
-        parse_mode="Markdown",
-    )
-
-    # Acknowledge user
-    await update.message.reply_text("Your shortname has been sent to the admin. Thank you!")
-
-    return ConversationHandler.END
-
-# Handle reason input
-async def get_reason(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    reason = update.message.text
-    user = update.message.from_user
-    username = f"@{user.username}" if user.username else user.full_name
-    selected_option = context.user_data.get("selected_option")
-    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Message to admin
-    admin_message = (
-        f"**Notification**\n\n"
-        f"**User**: {username}\n"
-        f"**Option**: {selected_option}\n"
-        f"**Message**: {reason}\n"
-        f"**Date and Time**: {current_time}"
-    )
-
-    # Send message to admin
-    await context.bot.send_message(
-        chat_id=int(ADMIN_CHAT_ID),
-        text=admin_message,
-        parse_mode="Markdown",
-    )
-
-    # Acknowledge user
-    await update.message.reply_text("Your message has been sent to the admin. Thank you!")
-
-    return ConversationHandler.END
-
-# Cancel handler
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Operation cancelled. You can start again by sending /start.")
-    return ConversationHandler.END
+# Функция для обработки выбора статуса
+async def choice(update: Update, context: CallbackContext) -> int:
+    user_status_choice = update.message.text
+    if user_status_choice in STATUS_OPTIONS:
+        context.user_data['choice'] = user_status_choice
+        await update.message.reply_text(f"Введите свое имя:", reply_markup=ForceReply(selective=True))
+        return NAME
+    elif user_status_choice == 'Cancel':
+        await update.message.reply_text("Диалог отменен")
+        return await start(update, context)
+    else:
+        await update.message.reply_text("Неверная команда. Попробуйте еще раз.")
+        return CHOOSING
 
 # Get chat ID command handler
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 
-# Main function to run the bot
-def main():
-    application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Create a conversation handler with the states SELECT_OPTION, GET_REASON, and GET_SHORTNAME
+# Функция для получения имени
+async def get_name(update: Update, context: CallbackContext) -> int:
+    context.user_data['name'] = update.message.text
+    await update.message.reply_text(f"Пожалуйста, объясните почему вы выбрали '{context.user_data['choice']}'.")
+    return REASON
+
+# Функция для получения причины
+async def get_reason(update: Update, context: CallbackContext) -> int:
+    reason = update.message.text
+    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    message_to_send = f"{current_datetime}: {context.user_data['name']} находится в статусе {context.user_data['choice']} по причине: {reason}"
+
+    # Отправка данных другому пользователю
+    await context.bot.send_message(chat_id=CHAT_ID, text=message_to_send)
+
+    await update.message.reply_text("Благодарим вас! Возвращаемся в главное меню.")
+
+    # Возвращаемся в главное меню
+    return await start(update, context)
+
+
+
+def main():
+    app = Application.builder().token(TOKEN).build()
+
     conv_handler = ConversationHandler(
-        entry_points=[CommandHandler("start", start)],
+        entry_points=[CommandHandler('start', start)],
         states={
-            SELECT_OPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_option)],
-            GET_REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason)],
-            GET_SHORTNAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_shortname)],
+            START: [MessageHandler(filters.Regex(f'^({"|".join(['Start'])})$'), second_menu_choice)],
+            CHOOSING: [MessageHandler(filters.Regex(f'^({"|".join(SECOND_MENU_OPTIONS)})$'), choice)],
+            NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_name)],
+            REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason)]
         },
-        fallbacks=[CommandHandler("cancel", cancel)],
+        fallbacks=[],
     )
 
-    # Add the conversation handler and get_chat_id handler to the application
-    application.add_handler(conv_handler)
-    application.add_handler(CommandHandler("get_chat_id", get_chat_id))
+    app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("get_chat_id", get_chat_id))
+    # Запуск бота
+    app.run_polling()
 
-    print("Bot is running...")
-    application.run_polling()
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
+
