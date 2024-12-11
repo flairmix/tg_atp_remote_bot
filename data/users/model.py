@@ -14,10 +14,10 @@ class User(Base):
     __tablename__ = "user_account"
     # id: Mapped[UUID] = mapped_column(primary_key=True)
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default=uuid4, primary_key=True)
-    shortname: Mapped[str] 
-    fullname: Mapped[Optional[str]] 
+    shortname: Mapped[str] = mapped_column(String, unique=True)
+    fullname: Mapped[str] 
     email: Mapped[str] 
-    group: Mapped[Optional[str]] 
+    group: Mapped[str] 
     GRL: Mapped[Optional[str]] 
     user_status: Mapped[List["Status"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", 
@@ -25,7 +25,7 @@ class User(Base):
 
     # addresses: Mapped[List["Address"]] = relationship(
     #     back_populates="user", cascade="all, delete-orphan"
-    
+
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, name={self.shortname!r}, fullname={self.fullname!r})"
 

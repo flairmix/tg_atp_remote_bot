@@ -7,7 +7,6 @@ from datetime import datetime
 current_dir = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.dirname(current_dir)
 db_file = os.path.join(parent_dir, "tutorial.db")
-# engine = create_engine(f"sqlite:///{db_file}", echo=True)
 
 engine = create_engine("sqlite:///tutorial.db", echo=True)
 
@@ -18,36 +17,31 @@ Base.metadata.create_all(engine)
 
 session1 = SessionLocal()
 
-with session1: 
-    current_user = User(
-        shortname = "MID",
-        fullname = "Донченко Михаил Александрович",
-        email = "michail.donchenko@atp-tlp.ru", 
-        group = "HKLS",
-        GRL = "KIRA"
-    )
 
-    session1.add_all([current_user])
-    session1.commit()
+#test fill db 
+with session1:
 
-    new_status = Status(
-        work_status = "Remote",
-        user_id = current_user.id,
-        date_status = datetime.now(),
-        message = "hello, i'm sick"
+    stmt = select(User).where(User.shortname == "MID")
+    user = session1.execute(stmt).scalars().first()
+
+    if user is None:
+        current_user = User(
+            shortname = "MID",
+            fullname = "Донченко Михаил Александрович",
+            email = "michail.donchenko@atp-tlp.ru", 
+            group = "HKLS",
+            GRL = "KIRA"
         )
 
-    session1.add_all([new_status])
-    session1.commit()
+        session1.add_all([current_user])
+        session1.commit()
 
+        new_status = Status(
+            work_status = "Remote",
+            user_id = current_user.id,
+            date_status = datetime.now(),
+            message = "hello, i'm sick"
+            )
 
-
-
-
-# session = Session(engine)
-# stmt = select(User).where(User.name.in_(["spongebob", "sandy"]))
-# for user in session.scalars(stmt):
-#     print(user)
-              
-
-
+        session1.add_all([new_status])
+        session1.commit()
