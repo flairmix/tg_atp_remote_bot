@@ -38,11 +38,12 @@ CHAT_ID = int(os.getenv('CHAT_ID'))
 
 # Опции для выбора
 START_MENU_OPTIONS = ['Start'] 
-STATUS_OPTIONS = ['Remote', 'Sick', 'Vacation', 'Cancel']
-DATE_MENU_OPTIONS = ['Сегодня', 'Завтра', 'Другой день', 'Выбрать несколько дней', 'Cancel'] 
+STATUS_OPTIONS = ['Remote', 'Sick', 'Vacation']
+DATE_MENU_OPTIONS = ['Сегодня', 'Завтра', 'Другой день', 'Выбрать несколько дней'] 
+CANCEL_OPTION = ['Cancel']
 
 # Состояния диалога
-START, CHOOSING_STATUS, SHORTNAME, REASON = range(4)
+START, SHORTNAME, REASON = range(3)
 
 # Get chat ID command handler
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -63,47 +64,23 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 
 # Функция для обработки выбора опции из второго меню
-async def second_menu_choice(update: Update, context: CallbackContext) -> int:
-    
-    if update.message.text == 'Cancel':
-        await update.message.reply_text("Диалог отменен")
-        return await start(update, context)
+async def choose_status(update: Update, context: CallbackContext) -> int:
 
+    keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
+
+    await update.message.edit_message_text(f"Добро пожаловать! \n"
+                                f"Выберете статус: ", 
+                                reply_markup=InlineKeyboardMarkup(keyboard))
 
     return SHORTNAME
-
-
-
-
-# Функция для обработки выбора статуса
-async def choice(update: Update, context: CallbackContext) -> int:
-    user_status_choice = update.message.text
-    if user_status_choice in STATUS_OPTIONS:
-        context.user_data['choice'] = user_status_choice
-
-        # await update.message.reply_text(f"Введите свое имя:", reply_markup=ForceReply(selective=True))
-        status_reply_markup = ReplyKeyboardMarkup(cancel_button, 
-                                                  one_time_keyboard=True
-                                                  )
-
-        await update.message.reply_text(
-            f"Введите свое имя:", reply_markup=status_reply_markup, 
-        )
-        return SHORTNAME
-    elif user_status_choice == 'Cancel':
-        await update.message.reply_text("Диалог отменен")
-        return await start(update, context)
-    else:
-        await update.message.reply_text("Неверная команда. Попробуйте еще раз.")
-        return CHOOSING_STATUS
 
 
 # Функция для получения имени
 async def get_shortname(update: Update, context: CallbackContext) -> int:
     
-    if update.message.text == 'Cancel':
-        await update.message.reply_text("Диалог отменен")
-        return await start(update, context)
+    # if update.message.text == 'Cancel':
+    #     await update.message.reply_text("Диалог отменен")
+    #     return await start(update, context)
 
     context.user_data['name'] = update.message.text
 
@@ -112,7 +89,7 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
     session1 = SessionLocal()
     with session1: 
         try:
-            user_current = session1.query(User).filter_by(shortname=context.user_data['name']).first()
+            user_current = session1.query(User).filter_by(str(shortname=context.user_data['name']).upper()).first()
             if user_current is None:
                 await update.message.reply_text(f"Такого пользователя не найдено, введите свой shortname")
                 return SHORTNAME
@@ -120,7 +97,7 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
         except Exception:
             pass
     
-    keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS]
+    keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS + ["Cancel"]] 
 
     await update.message.reply_text(f"Выберете дату: ", 
                                     reply_markup=InlineKeyboardMarkup(keyboard))
@@ -138,16 +115,16 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
     # reason = update.message.text
     context.user_data['reason'] = update.message.text
 
-    current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    message_to_send = (f"{current_datetime}: {context.user_data['name']}" +
-        f"находится в статусе {context.user_data['choice']} по причине:" + 
+    current_datetime = context.user_data['datetime_show']
+    message_to_send = (f"{current_datetime}: {str(context.user_data['name']).upper()}" +
+        f" находится в статусе {context.user_data['choice']} по причине: " + 
         f"{context.user_data['reason']}")
 
     session1 = SessionLocal()
 
     with session1: 
         try:
-            user_current = session1.query(User).filter_by(shortname=context.user_data['name']).first()
+            user_current = session1.query(User).filter_by(shortname=str(context.user_data['name']).upper()).first()
 
             if user_current is not None:
                 new_status = Status(
@@ -187,30 +164,51 @@ async def button_handler(update: Update, context: CallbackContext) -> int:
     
     
     if query.data in START_MENU_OPTIONS:
-        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS]
+        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
 
-        await query.message.reply_text(f"Выберете статус: ", 
-                                reply_markup=InlineKeyboardMarkup(keyboard))
+        await query.edit_message_text(f"Выберете статус: ", 
+                                    reply_markup=InlineKeyboardMarkup(keyboard))
+        
     
     if query.data in STATUS_OPTIONS:
         context.user_data['choice'] = query.data
-        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS]
+        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
         
-        
-        await query.message.reply_text(f"Введите свое имя (shortname): ")
+        await query.edit_message_text(f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
+                                    f"Введите свое имя (shortname): ", 
+                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
+                                    )
         return SHORTNAME
 
 
     if query.data in DATE_MENU_OPTIONS:
+                            
         if query.data == "Сегодня":
             context.user_data['request_date'] = datetime.today()
-            await query.edit_message_text(f"Выбрано - <{query.data}>")
+            context.user_data['datetime_day'] = datetime.today().strftime("%Y-%m-%d" )
+            context.user_data['datetime_show'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+
+            await query.edit_message_text(
+                f"Добро пожаловать! \n" +
+                f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
+                f"Введите свое имя: <{context.user_data['name'] }> \n" +
+                f"Выбрано - <{context.user_data['datetime_day']}>")
             
         elif query.data == "Завтра":
             context.user_data['request_date'] = datetime.today() + timedelta(days=1)
-            await query.edit_message_text(f"Выбрано - <{query.data}>")
+            await query.edit_message_text(
+                f"Добро пожаловать! \n" +
+                f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
+                f"Введите свое имя: <{context.user_data['name'] }> \n" +
+                f"Выбрано - <{context.user_data['datetime_day']}>")
+            
         elif query.data == "Другой день":
-            pass
+            await query.edit_message_text(
+                f"Добро пожаловать! \n" +
+                f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
+                f"Введите свое имя: <{context.user_data['name'] }> \n" +
+                f"Выбрано - <{context.user_data['datetime_day']}>")
+            
         elif query.data == "Выбрать несколько дней":
             pass
         elif query.data == "Cancel":
@@ -235,9 +233,8 @@ if __name__ == "__main__":
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            START: [MessageHandler(filters.TEXT & ~filters.COMMAND, second_menu_choice), callbackhandler],
+            START: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_status), callbackhandler],
             SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler],
-            CHOOSING_STATUS: [MessageHandler(filters.Regex(f'^({"|".join(START_MENU_OPTIONS)})$'), choice), callbackhandler],
             REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler],
         },
         fallbacks=[],
