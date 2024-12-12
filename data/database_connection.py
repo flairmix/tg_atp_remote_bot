@@ -2,7 +2,7 @@ import os
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker, Session
 from data.users.model import Base, User, Status 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 current_dir = os.path.abspath(os.path.dirname(__file__))
 parent_dir = os.path.dirname(current_dir)
@@ -32,6 +32,13 @@ with session1:
             group = "HKLS",
             GRL = "KIRA"
         )
+        current_user2 = User(
+            shortname = "KIRA",
+            fullname = "Кирпичников Андрей Леонидович",
+            email = "andrew.kirpichnikow@atp-tlp.ru", 
+            group = "HKLS",
+            GRL = "KIRA"
+        )
 
         session1.add_all([current_user])
         session1.commit()
@@ -39,7 +46,8 @@ with session1:
         new_status = Status(
             work_status = "Remote",
             user_id = current_user.id,
-            date_status = datetime.now(),
+            date_message = datetime.now(),
+            date_for_request = datetime.now() + timedelta(days=1),
             message = "hello, i'm sick"
             )
 

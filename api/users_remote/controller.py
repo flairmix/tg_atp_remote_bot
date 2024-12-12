@@ -126,7 +126,8 @@ class UserController(Controller):
                 "fullname" : user.fullname, 
                 "email" : user.email, 
                 "group" : user.group, 
-                "GRL" : user.GRL
+                "GRL" : user.GRL,
+                "city" : user.city,
                 }
             )
 
@@ -148,7 +149,7 @@ class UserController(Controller):
         - 200: User successfully deleted.
         - 404: User with the specified shortname was not found.
         """
-        
+
         stmt = select(User).where(User.shortname == shortname)
         user = db.execute(stmt).scalars().first()
 
