@@ -77,26 +77,23 @@ async def choose_status(update: Update, context: CallbackContext) -> int:
 
 # Функция для получения имени
 async def get_shortname(update: Update, context: CallbackContext) -> int:
-    
-    # if update.message.text == 'Cancel':
-    #     await update.message.reply_text("Диалог отменен")
-    #     return await start(update, context)
-
+        
     context.user_data['name'] = update.message.text
 
-    print(f"context.user_data['name'] - {context.user_data['name']}")
     #check if user with this shortname exist 
     session1 = SessionLocal()
     with session1: 
         try:
-            user_current = session1.query(User).filter_by(str(shortname=context.user_data['name']).upper()).first()
+            user_current = session1.query(User).filter_by(shortname=str(context.user_data['name']).upper()).first()
             if user_current is None:
                 await update.message.reply_text(f"Такого пользователя не найдено, введите свой shortname")
                 return SHORTNAME
             
+            context.user_data['name'] = update.message.text
+            
         except Exception:
-            pass
-    
+            return START
+         
     keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS + ["Cancel"]] 
 
     await update.message.reply_text(f"Выберете дату: ", 
