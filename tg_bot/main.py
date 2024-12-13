@@ -79,6 +79,7 @@ async def choose_status(update: Update, context: CallbackContext) -> int:
 async def get_shortname(update: Update, context: CallbackContext) -> int:
         
     context.user_data['name'] = update.message.text
+    message_id_username = update.message.message_id
 
     #check if user with this shortname exist 
     session1 = SessionLocal()
@@ -96,6 +97,11 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
          
     keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS + ["Cancel"]] 
 
+    
+    await app.bot.delete_message(chat_id=update.message.chat_id,
+                        message_id=message_id_username
+        )
+
     await update.message.reply_text(f"Выберете дату: ", 
                                     reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -105,16 +111,12 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
 # Функция для получения причины REASON
 async def get_reason(update: Update, context: CallbackContext) -> int:
 
-    if update.message.text == 'Cancel':
-        await update.message.reply_text("Диалог отменен")
-        return await start(update, context)
-
-    # reason = update.message.text
     context.user_data['reason'] = update.message.text
 
-    current_datetime = context.user_data['datetime_show']
-    message_to_send = (f"{current_datetime}: {str(context.user_data['name']).upper()}" +
-        f" находится в статусе {context.user_data['choice']} по причине: " + 
+    message_to_send = (
+        f"{context.user_data['date_creation_request']}: User <{str(context.user_data['name']).upper()}> \n" +
+        f"отправил запрос на {context.user_data['choice']} на {context.user_data['request_date']} \n"+
+        f"с сообщением: \n" + 
         f"{context.user_data['reason']}")
 
     session1 = SessionLocal()
@@ -150,7 +152,6 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
 async def button_handler(update: Update, context: CallbackContext) -> int:
     """Обрабатывает нажатие на кнопку."""
     query = update.callback_query
-    print(query.data)
 
     if query.data == "Cancel":
         await query.message.reply_text("Диалог отменен")
@@ -180,41 +181,46 @@ async def button_handler(update: Update, context: CallbackContext) -> int:
 
     if query.data in DATE_MENU_OPTIONS:
                             
+        context.user_data['date_creation_request'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+
         if query.data == "Сегодня":
             context.user_data['request_date'] = datetime.today()
-            context.user_data['datetime_day'] = datetime.today().strftime("%Y-%m-%d" )
-            context.user_data['datetime_show'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-
-            await query.edit_message_text(
-                f"Добро пожаловать! \n" +
-                f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
-                f"Введите свое имя: <{context.user_data['name'] }> \n" +
-                f"Выбрано - <{context.user_data['datetime_day']}>")
             
         elif query.data == "Завтра":
             context.user_data['request_date'] = datetime.today() + timedelta(days=1)
             await query.edit_message_text(
-                f"Добро пожаловать! \n" +
-                f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
+                f"Выбран статус:  <{context.user_data['choice'] }> \n" +
                 f"Введите свое имя: <{context.user_data['name'] }> \n" +
-                f"Выбрано - <{context.user_data['datetime_day']}>")
+                f"Выбрана дата - <{(datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")}>"
+                )
             
         elif query.data == "Другой день":
-            await query.edit_message_text(
-                f"Добро пожаловать! \n" +
-                f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
-                f"Введите свое имя: <{context.user_data['name'] }> \n" +
-                f"Выбрано - <{context.user_data['datetime_day']}>")
+            query.message.reply_text(
+                                        f"Введите дату в формате: ddmmYY - <31.12.2024>:",
+                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
+                                        )
             
+            try:
+                context.user_data['request_date'] = datetime.strptime(query.data, '%d.%m.%Y')
+            except:
+                await query.edit_message_text(f"Неправильно, попробуй еще раз")
+
+                                              
         elif query.data == "Выбрать несколько дней":
             pass
         elif query.data == "Cancel":
             await update.message.reply_text("Диалог отменен")
             return await start(update, context)
-        else:
-            pass
+    
+        await query.edit_message_text(f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
+                                    f"Введите свое имя: <{context.user_data['name'] }> \n" +
+                                    f"Выбрана дата <{context.user_data['request_date']}>",
+                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
+                                    )
         
-        await query.message.reply_text(f"Опишите причину: ") 
+
+        await query.message.reply_text(f"Опишите причину: ", 
+                                       reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]]))
         return REASON
             
 
@@ -234,7 +240,7 @@ if __name__ == "__main__":
             SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler],
             REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler],
         },
-        fallbacks=[],
+        fallbacks=[], 
     )
 
     app.add_handler(conv_handler)
