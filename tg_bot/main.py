@@ -9,7 +9,6 @@ from datetime import datetime, timedelta
 from telegram import (Update, 
                       ReplyKeyboardMarkup, 
                       KeyboardButton, 
-                      ForceReply, 
                       InlineKeyboardMarkup,
                     InlineKeyboardButton)
 from telegram.ext import (
@@ -24,26 +23,24 @@ from telegram.ext import (
 )
 from data.database_connection import SessionLocal
 from data.users.model import User, Status
+from handlers.states import *
+from handlers.button_handlers import button_handler_start, button_handler_shortname, button_handler_date
 
 import logging
 
-logging.basicConfig(
+logger = logging.basicConfig(
+    # filename=f'tg_bot/logs/{datetime.now().strftime("%Y-%m-%d__%H-%M-%S")}_log.log',
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
+
+
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = int(os.getenv('CHAT_ID'))
 
-# Опции для выбора
-START_MENU_OPTIONS = ['Start'] 
-STATUS_OPTIONS = ['Remote', 'Sick', 'Vacation']
-DATE_MENU_OPTIONS = ['Сегодня', 'Завтра', 'Другой день', 'Выбрать несколько дней'] 
-CANCEL_OPTION = ['Cancel']
-
-# Состояния диалога
-START, SHORTNAME, REASON = range(3)
 
 # Get chat ID command handler
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -59,7 +56,8 @@ async def start(update: Update, context: CallbackContext) -> None:
 
     await update.message.reply_text(f"Добро пожаловать! Нажмите 'Start' для продолжения. ", 
                                     reply_markup=InlineKeyboardMarkup(keyboard))
-
+    
+    logging.info(msg="bot succesfully started - state START")
     return START
 
 
@@ -149,96 +147,21 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
 
 
 
-async def button_handler(update: Update, context: CallbackContext) -> int:
-    """Обрабатывает нажатие на кнопку."""
-    query = update.callback_query
-
-    if query.data == "Cancel":
-        await query.message.reply_text("Диалог отменен")
-        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in START_MENU_OPTIONS]
-
-        await query.message.reply_text(f"Добро пожаловать! Нажмите 'Start' для продолжения. ", 
-                                reply_markup=InlineKeyboardMarkup(keyboard))
-    
-    
-    if query.data in START_MENU_OPTIONS:
-        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
-
-        await query.edit_message_text(f"Выберете статус: ", 
-                                    reply_markup=InlineKeyboardMarkup(keyboard))
-        
-    
-    if query.data in STATUS_OPTIONS:
-        context.user_data['choice'] = query.data
-        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
-        
-        await query.edit_message_text(f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
-                                    f"Введите свое имя (shortname): ", 
-                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                    )
-        return SHORTNAME
-
-
-    if query.data in DATE_MENU_OPTIONS:
-                            
-        context.user_data['date_creation_request'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
-
-        if query.data == "Сегодня":
-            context.user_data['request_date'] = datetime.today()
-            
-        elif query.data == "Завтра":
-            context.user_data['request_date'] = datetime.today() + timedelta(days=1)
-            await query.edit_message_text(
-                f"Выбран статус:  <{context.user_data['choice'] }> \n" +
-                f"Введите свое имя: <{context.user_data['name'] }> \n" +
-                f"Выбрана дата - <{(datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")}>"
-                )
-            
-        elif query.data == "Другой день":
-            query.message.reply_text(
-                                        f"Введите дату в формате: ddmmYY - <31.12.2024>:",
-                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                        )
-            
-            try:
-                context.user_data['request_date'] = datetime.strptime(query.data, '%d.%m.%Y')
-            except:
-                await query.edit_message_text(f"Неправильно, попробуй еще раз")
-
-                                              
-        elif query.data == "Выбрать несколько дней":
-            pass
-        elif query.data == "Cancel":
-            await update.message.reply_text("Диалог отменен")
-            return await start(update, context)
-    
-        await query.edit_message_text(f"Выберете статус: выбрано <{context.user_data['choice'] }> \n" +
-                                    f"Введите свое имя: <{context.user_data['name'] }> \n" +
-                                    f"Выбрана дата <{context.user_data['request_date']}>",
-                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                    )
-        
-
-        await query.message.reply_text(f"Опишите причину: ", 
-                                       reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]]))
-        return REASON
-            
-
-
-
-
 if __name__ == "__main__":
 
     app = Application.builder().token(TOKEN).build()
 
-    callbackhandler = CallbackQueryHandler(button_handler)
+    callbackhandler_start = CallbackQueryHandler(button_handler_start)
+    callbackhandler_shortname = CallbackQueryHandler(button_handler_shortname)
+    callbackhandler_date = CallbackQueryHandler(button_handler_date)
     
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            START: [MessageHandler(filters.TEXT & ~filters.COMMAND, choose_status), callbackhandler],
-            SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler],
-            REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler],
+            START: [MessageHandler(~filters.COMMAND, choose_status), callbackhandler_start],
+            SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_shortname],
+            # DATE: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_shortname],
+            REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler_date],
         },
         fallbacks=[], 
     )
