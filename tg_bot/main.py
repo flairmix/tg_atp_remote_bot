@@ -1,8 +1,4 @@
-import os, sys
-
-current_dir = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.dirname(current_dir)
-sys.path.insert(0, parent_dir) 
+import os
 
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -21,7 +17,7 @@ from telegram.ext import (
     filters,
     CallbackQueryHandler,
 )
-from data.database_connection import SessionLocal
+from database_connection import SessionLocal
 from data.users.model import User, Status
 from handlers.states import *
 from handlers.button_handlers import button_handler_start, button_handler_shortname, button_handler_date
@@ -33,7 +29,6 @@ logger = logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-
 
 
 

@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    ports:
+      - '8080:80'
+    depends_on:
+      - postgres
+    env_file:
+    - .env
+
+
+
+  tg-bot:
+    image: python:3.12
+    container_name: tg-bot-remote
+    working_dir: /app
+    volumes:
+      - ./tg_bot:/app
+    ports:
+      - '8000:8000'
+    command: sh -c "pip install uv && uv pip install -r pyproject.toml --system && uv run main.py"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
+
+
+
+
+volumes:
+  postgres_data:

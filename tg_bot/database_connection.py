@@ -4,10 +4,6 @@ from sqlalchemy.orm import sessionmaker, Session
 from data.users.model import Base, User, Status 
 from datetime import datetime, timedelta
 
-current_dir = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.dirname(current_dir)
-db_file = os.path.join(parent_dir, "tutorial.db")
-
 #sqlite
 # engine = create_engine("sqlite:///tutorial.db", echo=True)
 # SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -20,12 +16,9 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-
 Base.metadata.create_all(engine)
 
-
 session1 = SessionLocal()
-
 
 #test fill db 
 with session1:
