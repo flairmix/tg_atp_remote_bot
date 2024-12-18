@@ -21,21 +21,14 @@ session1 = SessionLocal()
 #test fill db 
 with session1:
 
-    stmt = select(User).where(User.shortname == "MID")
+    stmt = select(User).where(User.shortname == "TEST")
     user = session1.execute(stmt).scalars().first()
 
     if user is None:
         current_user = User(
-            shortname = "MID",
-            fullname = "Донченко Михаил Александрович",
-            email = "michail.donchenko@atp-tlp.ru", 
-            group = "HKLS",
-            GRL = "KIRA"
-        )
-        current_user2 = User(
-            shortname = "KIRA",
-            fullname = "Кирпичников Андрей Леонидович",
-            email = "andrew.kirpichnikow@atp-tlp.ru", 
+            shortname = "TEST",
+            fullname = "TEST Михаил Александрович",
+            email = "TEST.donchenko@atp-tlp.ru", 
             group = "HKLS",
             GRL = "KIRA"
         )
