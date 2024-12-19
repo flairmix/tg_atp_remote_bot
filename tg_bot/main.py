@@ -124,7 +124,8 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
                     user_id = user_current.id,
                     date_message = datetime.now(),
                     message = context.user_data['reason'],
-                    date_for_request = context.user_data['request_date']
+                    date_for_request = context.user_data['request_date'],
+                    user=user_current
                     )
             
             session1.add_all([new_status])
