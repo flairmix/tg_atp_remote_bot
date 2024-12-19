@@ -18,8 +18,10 @@ class User(Base):
     fullname: Mapped[str] 
     email: Mapped[str] 
     group: Mapped[str] 
+    level: Mapped[str] 
     GRL: Mapped[Optional[str]] 
     city: Mapped[Optional[str]] 
+    chat_id: Mapped[Optional[int]] 
     user_status: Mapped[List["Status"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", 
     )
