@@ -1,9 +1,9 @@
 from litestar import Controller, get, post, put, patch, delete, Request, Response
 from litestar.dto import DTOData
 from typing import Generator
-from data.database_connection import SessionLocal
+from database_connection import SessionLocal
 
-from data.users.model import User, Status
+from users.model import User, Status
 from sqlalchemy.orm import Session
 from sqlalchemy import text, select
 

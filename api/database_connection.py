@@ -1,18 +1,20 @@
 import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker, Session
-from data.users.model import Base, User, Status 
+from users.model import Base, User, Status 
 from datetime import datetime, timedelta
 
-current_dir = os.path.abspath(os.path.dirname(__file__))
-parent_dir = os.path.dirname(current_dir)
-db_file = os.path.join(parent_dir, "tutorial.db")
+# current_dir = os.path.abspath(os.path.dirname(__file__))
+# parent_dir = os.path.dirname(current_dir)
+# db_file = os.path.join(parent_dir, "tutorial.db")
 
 #sqlite
 # engine = create_engine("sqlite:///tutorial.db", echo=True)
 # SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
+load_dotenv()
 #postgress
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -35,7 +37,7 @@ with session1:
 
     if user is None:
         current_user = User(
-            shortname = "TEST",
+            shortname = "TEST_BE",
             fullname = "TEST Михаил Александрович",
             email = "TEST.donchenko@atp-tlp.ru", 
             group = "HKLS",
