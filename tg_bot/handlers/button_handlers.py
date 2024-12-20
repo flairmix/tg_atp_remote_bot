@@ -31,7 +31,7 @@ async def button_handler_start(update: Update, context: CallbackContext) -> int:
         return SHORTNAME
     
     
-async def button_handler_shortname(update: Update, context: CallbackContext) -> int:
+async def button_handler_cancel(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
 
     if query.data == "Cancel":
@@ -68,21 +68,17 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
             
         elif query.data == "Другой день":
             await query.message.reply_text(
-                                        f"Введите дату в формате: ddmmYY - <31.12.2024>:",
+                                        f"Введите дату в формате: ddmmYYYY (31.12.2024):",
                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                         )
+            return COMPLEX_DATE
             
-            # try:
-            #     context.user_data['request_date'] = datetime.strptime(query.data, '%d.%m.%Y')
-            # except:
-            #     await query.edit_message_text(f"Неправильно, попробуй еще раз" + 
-            #                                   f"Введите дату в формате: ddmmYY - <31.12.2024>:",
-            #                             reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-            #                             )
-
                                               
         elif query.data == "Выбрать несколько дней":
-            pass
+            await query.message.reply_text(
+                                        f"Это пока не работает =) ",
+                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
+                                        )
         elif query.data == "Cancel":
             await update.message.reply_text("Диалог отменен")
             return START

@@ -20,7 +20,8 @@ from telegram.ext import (
 from database_connection import SessionLocal
 from data.users.model import User, Status
 from handlers.states import *
-from handlers.button_handlers import button_handler_start, button_handler_shortname, button_handler_date
+from handlers.button_handlers import button_handler_start, button_handler_cancel, button_handler_date
+from handlers.date_validation import validate_date
 
 import logging
 
@@ -108,6 +109,36 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
     return REASON
 
 
+# handle input date from User 
+async def get_input_date(update: Update, context: CallbackContext) -> int:
+        
+    message_id_username = update.message.message_id
+    
+
+    if validate_date(update.message.text):
+        request_date = datetime.strptime(update.message.text, '%d.%m.%Y')
+        context.user_data['request_date'] = datetime.strptime(update.message.text, '%d.%m.%Y')
+        
+        await update.message.reply_text(f"Выберете статус: <{context.user_data['choice'] }> \n" +
+                                    f"Введите свое имя: <{str(context.user_data['name']).upper() }> \n" +
+                                    f"Введите дату <{datetime.strptime(update.message.text, '%d.%m.%Y').strftime("%Y-%m-%d")}> \n" +
+                                    f"Опишите причину: ",
+                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
+                                    )
+        return REASON
+    
+    else:
+        await app.bot.delete_message(chat_id=update.message.chat_id,
+                    message_id=message_id_username
+        )
+        await update.message.reply_text(f"Неправильно, попробуй еще раз \n" + 
+                                        f"Введите дату в формате: ddmmYYYY (31.12.2024)",
+                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
+                                        )
+        return COMPLEX_DATE
+    
+
+
 # Функция для получения причины REASON
 async def get_reason(update: Update, context: CallbackContext) -> int:
 
@@ -146,7 +177,7 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Благодарим вас! Возвращаемся в главное меню.")
 
     # Возвращаемся в главное меню
-    # return await start(update, context)
+    return await start(update, context)
 
 
 
@@ -155,15 +186,15 @@ if __name__ == "__main__":
     app = Application.builder().token(TOKEN).build()
 
     callbackhandler_start = CallbackQueryHandler(button_handler_start)
-    callbackhandler_shortname = CallbackQueryHandler(button_handler_shortname)
+    callbackhandler_cancel = CallbackQueryHandler(button_handler_cancel)
     callbackhandler_date = CallbackQueryHandler(button_handler_date)
     
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             START: [MessageHandler(~filters.COMMAND, choose_status), callbackhandler_start],
-            SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_shortname],
-            # DATE: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_shortname],
+            SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_cancel],
+            COMPLEX_DATE: [MessageHandler(filters.TEXT, get_input_date), callbackhandler_cancel],
             REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler_date],
         },
         fallbacks=[], 
