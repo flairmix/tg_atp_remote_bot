@@ -71,18 +71,18 @@ with session1:
             session1.add_all([person])
             session1.commit()
         
-        if  person.shortname == "TEST":
-            new_status = Status(
-                work_status = "Remote",
-                user_id = user.id,
-                date_message = datetime.now(),
-                date_for_request = datetime.now() + timedelta(days=1),
-                message = "hello, i'm sick", 
-                user=user
-                )
+            if person.shortname == "TEST":
+                new_status = Status(
+                    work_status = "Remote",
+                    user_id = user.id,
+                    date_message = datetime.now(),
+                    date_for_request = datetime.now() + timedelta(days=1),
+                    message = "hello, i'm sick", 
+                    user=user
+                    )
 
-            session1.add_all([new_status])
-            session1.commit()
+                session1.add_all([new_status])
+                session1.commit()
 
 
 

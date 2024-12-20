@@ -6,4 +6,4 @@ DATE_MENU_OPTIONS = ['Сегодня', 'Завтра', 'Другой день', 
 CANCEL_OPTION = ['Cancel']
 
 # Состояния диалога
-START, SHORTNAME, DATE, REASON = range(4)
+START, SHORTNAME, DATE, COMPLEX_DATE, REASON = range(5)
