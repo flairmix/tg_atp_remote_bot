@@ -37,6 +37,13 @@ TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 CHAT_ID = int(os.getenv('CHAT_ID'))
 
 
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await app.bot.send_message(chat_id=update.effective_chat.id, 
+                               text=f"Справка по использованию бота.\n" +
+                               f"Пишите свои замечания и мысли в канал https://t.me/atp_tlp"
+                               )
+
+
 # Get chat ID command handler
 async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.effective_chat.id
@@ -139,7 +146,7 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Благодарим вас! Возвращаемся в главное меню.")
 
     # Возвращаемся в главное меню
-    return await start(update, context)
+    # return await start(update, context)
 
 
 
@@ -163,7 +170,9 @@ if __name__ == "__main__":
     )
 
     app.add_handler(conv_handler)
+    app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("get_chat_id", get_chat_id))
+    app.add_handler(CommandHandler("help", help))
 
 
     app.run_polling()

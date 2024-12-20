@@ -20,16 +20,9 @@ Base.metadata.create_all(engine)
 
 session1 = SessionLocal()
 
-#test fill db 
-# •	Gurov, Vsevolod            GUV      BIM       TL1         Gurov Vsevolod  Vsevolod.Gurov@atp-tlp.ru
-# •	Shkaev, Egor                  SHKA      BIM       TL1         Shkaev Egor  Egor.Shkaev@atp-tlp.ru
-# •	Ignatiev, Nikita                INI          OV       PRAK       Ignatiev Nikita  Nikita.Ignatiev@atp-tlp.ru 
-# •	Dolinskiy, Alexander     ADL        OV       PRAK       Dolinskiy Alexander Alexander.Dolinskiy@atp-tlp.ru
-# •	Perkhalyuk, Fedor         PDE        VK          Perkhalyuk Fedor Fedor.Perkhalyuk@atp-tlp.ru
-# •	Volodina Anastasia        VAN      VK          Volodina Anastasia  Anastasia.Volodina@atp-tlp.ru
 
+#testers db
 person_list = []
-
 
 user1 = User(shortname = "TEST", fullname="TEST Михаил Александрович", email="TEST.donchenko@atp-tlp.ru", 
     group="DEV", chat_id=432923144, GRL="KIRA", level="TL2", city="MOS")
@@ -43,13 +36,27 @@ user3 = User(shortname = "SHKA", fullname="Shkaev Egor", email="Egor.Shkaev@atp-
 user4 = User(shortname = "INI", fullname="Ignatiev Nikita", email="Nikita.Ignatiev@atp-tlp.ru", 
     group="OV", chat_id=0, GRL="KIRA", level="PRAK", city="MOS")
 
+user5 = User(shortname = "ADL", fullname="Dolinskiy Alexander", email="Alexander.Dolinskiy@atp-tlp.ru", 
+    group="OV", chat_id=0, GRL="KIRA", level="PRAK", city="MOS")
 
+user6 = User(shortname = "PDE", fullname="Perkhalyuk Fedor", email="Fedor.Perkhalyuk@atp-tlp.ru", 
+    group="VK", chat_id=0, GRL="KIRA", level="-", city="MOS")
+
+user7 = User(shortname = "VAN", fullname="Volodina Anastasia", email="Anastasia.Volodina@atp-tlp.ru", 
+    group="VK", chat_id=0, GRL="KIRA", level="-", city="MOS")
+
+user8 = User(shortname = "KIRA", fullname="Kirpichnikov Andrey", email="Andrey.Kirpichnikov@atp-tlp.ru", 
+    group="HKLS", chat_id=0, GRL="KIRA", level="GRL", city="MOS")
 
 
 person_list.append(user1)
 person_list.append(user2)
 person_list.append(user3)
 person_list.append(user4)
+person_list.append(user5)
+person_list.append(user6)
+person_list.append(user7)
+person_list.append(user8)
 
 
 with session1:

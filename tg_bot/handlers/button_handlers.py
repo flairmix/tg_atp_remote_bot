@@ -65,11 +65,6 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
             
         elif query.data == "Завтра":
             context.user_data['request_date'] = datetime.today() + timedelta(days=1)
-            # await query.edit_message_text(
-            #     f"Выбран статус:  <{context.user_data['choice'] }> \n" +
-            #     f"Введите свое имя: <{context.user_data['name'] }> \n" +
-            #     f"Выбрана дата - <{(datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")}>"
-            #     )
             
         elif query.data == "Другой день":
             await query.message.reply_text(
