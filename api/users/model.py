@@ -6,39 +6,47 @@ from uuid import uuid4
 from sqlalchemy.dialects.postgresql import UUID
 from dataclasses import dataclass
 
-class Base(DeclarativeBase):
+class Base(MappedAsDataclass, DeclarativeBase):
     pass
 
-
-class User(Base):
-    __tablename__ = "user_account"
-    # id: Mapped[UUID] = mapped_column(primary_key=True)
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default=uuid4, primary_key=True)
-    shortname: Mapped[str] = mapped_column(String, unique=True)
-    fullname: Mapped[str] 
-    email: Mapped[str] 
-    group: Mapped[str] 
-    GRL: Mapped[Optional[str]] 
-    city: Mapped[Optional[str]] 
-    user_status: Mapped[List["Status"]] = relationship(
-        back_populates="user", cascade="all, delete-orphan", 
+@dataclass
+class Users(Base):
+    __tablename__ = "users"
+    # shortname: Mapped[str] = mapped_column(String, unique=True) 
+    id: Mapped[str] = mapped_column(String, unique=True, primary_key=True) 
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    surname: Mapped[str] = mapped_column(String, nullable=False)
+    email: Mapped[str] = mapped_column(String, nullable=False)
+    group: Mapped[str] = mapped_column(String, nullable=False)
+    level: Mapped[str] = mapped_column(String, nullable=False)
+    GRL: Mapped[str] = mapped_column(String, nullable=False)
+    city: Mapped[Optional[str]] = mapped_column(String, nullable=False)
+    chat_id: Mapped[Optional[int]] = mapped_column(String, nullable=True)
+    # id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
+    
+    user_requests: Mapped[List["User_requests"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan", default_factory=list
     )
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, name={self.shortname!r}, fullname={self.fullname!r})"
 
 
-class Status(Base):
-    __tablename__ = "work_status"
+@dataclass
+class User_requests(Base):
+    __tablename__ = "user_requests"
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    work_status: Mapped[str]
+    work_status: Mapped[str]= mapped_column(String, nullable=False)
     date_message: Mapped[date] = mapped_column(DateTime)
-    message: Mapped[str]
+    message: Mapped[str]= mapped_column(String, nullable=False)
     date_for_request: Mapped[date] = mapped_column(Date)
-    user_id: Mapped[int] = mapped_column(ForeignKey("user_account.id"))
-    user: Mapped["User"] = relationship(back_populates="user_status")
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["Users"] = relationship(back_populates="user_requests")
+    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
     
+    def __post_init__(self):
+        if self.user is None:
+            raise ValueError("A Status must be associated with a User instance.")
 
     def __repr__(self) -> str:
         return f"user(id={self.user!r}, work_status={self.work_status!r})"

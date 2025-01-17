@@ -1,9 +1,10 @@
+from datetime import datetime
 from litestar import Controller, get, post, put, patch, delete, Request, Response
 from litestar.dto import DTOData
 from typing import Generator
 from database_connection import SessionLocal
 
-from users.model import User, Status
+from users.model import Users, User_requests
 from sqlalchemy.orm import Session
 from sqlalchemy import text, select
 
@@ -21,14 +22,14 @@ class UserController(Controller):
     tags=["users"]
   
 
-    @get("/{shortname:str}", dependencies={"db": get_db})
-    async def user(self, db: Session, shortname:str) -> dict | Response:
+    @get("/{id:str}", dependencies={"db": get_db})
+    async def user(self, db: Session, id:str) -> dict | Response:
         """
-        Get detailed information about a specific user based on their shortname.
+        Get detailed information about a specific user based on their id.
 
         Parameters:
         - `db`: Database session dependency.
-        - `shortname`: Shortname of the user to retrieve.
+        - `id`: Shortname of the user to retrieve.
 
         Returns:
         - If successful, returns a dictionary containing user details.
@@ -38,21 +39,21 @@ class UserController(Controller):
         - Any exceptions raised by the database operations will be propagated to the caller.
         """
 
-        stmt = select(User).where(User.shortname == shortname)
+        stmt = select(Users).where(Users.id == id)
         user = db.execute(stmt).scalars().first()
 
         if user is not None:
             return {
                 "id" : user.id, 
-                "shortname" : user.shortname, 
-                "fullname" : user.fullname, 
+                "name" : user.name, 
+                "surname" : user.surname, 
                 "email" : user.email, 
                 "group" : user.group, 
                 "GRL" : user.GRL
                 }
         else:
             return Response(status_code=404, 
-                            content=f"User with shortname <{shortname}> - not found")
+                            content=f"Users with id <{id}> - not found")
     
 
     @post("/create_user", dependencies={"db": get_db})
@@ -74,28 +75,62 @@ class UserController(Controller):
         - Any exceptions raised by the database operations will be propagated to the caller.
         """
         
-        stmt = select(User).where(User.shortname == data.get('shortname'))
+        stmt = select(Users).where(Users.id == data.get('id'))
         user = db.execute(stmt).scalars().first()
 
         if user is None:
-            new_user = User(
-                shortname = data.get('shortname'),
-                fullname = data.get('fullname'),
+            new_user = Users(
+                id = data.get('id'),
+                name = data.get('name'),
+                surname = data.get('surname'),
                 email = data.get('email'), 
+                level = data.get('level'), 
+                city = data.get('city'), 
                 group = data.get('group'),
-                GRL = data.get('GRL')
+                GRL = data.get('GRL'),
+                chat_id = 0
             )
 
             db.add_all([new_user])
             db.commit()
 
             return Response(status_code=201, 
-                            content=f"User with shortname <{data.get('shortname')}> - created")
+                            content=f"Users with id <{data.get('id')}> - created")
         else:
             return Response(status_code=409, 
                             content=
-                            f"User with shortname <{data.get('shortname')}> - already exist")
+                            f"Users with id <{data.get('id')}> - already exist")
+        
 
+    @post("/create_user_request/{user_id:str}", dependencies={"db": get_db})
+    async def create_user_request(self, 
+                          db: Session, 
+                          data:dict, 
+                          user_id:str) -> Response:
+        
+
+        stmt = select(Users).where(Users.id == user_id)
+        user_db = db.execute(stmt).scalars().first()
+        
+        if user_db is not None:
+            new_user_request = User_requests(
+                work_status = data.get('work_status'),
+                date_message = datetime.now(),
+                message= data.get('message'),
+                date_for_request = data.get('date_for_request'),
+                user_id = data.get('id'),
+                user = user_db
+            )
+
+            db.add_all([new_user_request])
+            db.commit()
+
+            return Response(status_code=201, 
+                            content=f"User_request with id <{user_id}> - created")
+        else:
+            return Response(status_code=409, 
+                            content=
+                            f"Error with creating user_request")
 
 
     @get("/list_users", dependencies={"db": get_db})
@@ -113,7 +148,7 @@ class UserController(Controller):
         - Any exceptions raised by the database operations will be propagated to the caller.
         """
 
-        stmt = select(User)
+        stmt = select(Users)
         users = db.execute(stmt).scalars().all()
 
         result = []
@@ -122,8 +157,8 @@ class UserController(Controller):
             result.append(
                 {
                 "id" : user.id, 
-                "shortname" : user.shortname, 
-                "fullname" : user.fullname, 
+                "name" : user.name, 
+                "surname" : user.surname, 
                 "email" : user.email, 
                 "group" : user.group, 
                 "GRL" : user.GRL,
@@ -133,32 +168,58 @@ class UserController(Controller):
 
         return result
     
+    @get("/list_user_requests/{id:str}", dependencies={"db": get_db})
+    async def list_user_requests(self, 
+                                 db: Session, 
+                                 id:str) -> list:
 
-    @delete("/delete_user/{shortname:str}", dependencies={"db": get_db})
-    async def delete_user(self, db: Session, shortname:str) -> None:
-        """Deletes a user by their shortname.
+        stmt = select(User_requests).where(User_requests.user_id == id)
+        user_requests = db.execute(stmt).scalars().all()
+
+        result = []
+
+        for request in user_requests:
+            result.append(
+                {
+                "id" : request.id, 
+                "work_status" : request.work_status, 
+                "user_id" : request.user_id, 
+                "date_for_request" : request.date_for_request, 
+                "message" : request.message, 
+                "date_message" : request.date_message
+                }
+            )
+
+        return result
+
+    
+
+    @delete("/delete_user/{id:str}", dependencies={"db": get_db})
+    async def delete_user(self, db: Session, id:str) -> None:
+        """Deletes a user by their id.
 
         Arguments:
         - db (Session): Database session.
-        - shortname (str): The user's shortname.
+        - id (str): The user's id.
 
         Returns:
         - Response: A response with the corresponding status and content.
 
         Status codes:
-        - 200: User successfully deleted.
-        - 404: User with the specified shortname was not found.
+        - 200: Users successfully deleted.
+        - 204: Users with the specified id was not found.
         """
 
-        stmt = select(User).where(User.shortname == shortname)
+        stmt = select(Users).where(Users.id == id)
         user = db.execute(stmt).scalars().first()
 
         if user is not None:
             db.delete(user)
             db.commit()
 
-            return Response(status_code=200)
+            return Response(status_code=200, 
+                            content=f"User <{id}> deleted")
         else:
-            return Response(status_code=404,
-                            content=f"User <{shortname}> not found")
+            return Response(status_code=204,
+                            content=f"Users <{id}> not found")
                             
