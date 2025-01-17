@@ -10,18 +10,21 @@ class Base(MappedAsDataclass, DeclarativeBase):
     pass
 
 @dataclass
-class User(Base):
-    __tablename__ = "user_account"
-    shortname: Mapped[str] = mapped_column(String, unique=True) 
-    fullname: Mapped[str] = mapped_column(String, nullable=False)
+class Users(Base):
+    __tablename__ = "users"
+    # shortname: Mapped[str] = mapped_column(String, unique=True) 
+    id: Mapped[str] = mapped_column(String, unique=True, primary_key=True) 
+    name: Mapped[str] = mapped_column(String, nullable=False)
+    surname: Mapped[str] = mapped_column(String, nullable=False)
     email: Mapped[str] = mapped_column(String, nullable=False)
     group: Mapped[str] = mapped_column(String, nullable=False)
     level: Mapped[str] = mapped_column(String, nullable=False)
-    GRL: Mapped[Optional[str]] = mapped_column(String, nullable=False)
+    GRL: Mapped[str] = mapped_column(String, nullable=False)
     city: Mapped[Optional[str]] = mapped_column(String, nullable=False)
     chat_id: Mapped[Optional[int]] = mapped_column(String, nullable=False)
-    id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
-    user_status: Mapped[List["Status"]] = relationship(
+    # id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
+    
+    user_requests: Mapped[List["User_requests"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", default_factory=list
     )
 
@@ -30,15 +33,15 @@ class User(Base):
 
 
 @dataclass
-class Status(Base):
-    __tablename__ = "work_status"
+class User_requests(Base):
+    __tablename__ = "user_requests"
 
     work_status: Mapped[str]= mapped_column(String, nullable=False)
     date_message: Mapped[date] = mapped_column(DateTime)
     message: Mapped[str]= mapped_column(String, nullable=False)
     date_for_request: Mapped[date] = mapped_column(Date)
-    user_id: Mapped[UUID] = mapped_column(ForeignKey("user_account.id"))
-    user: Mapped["User"] = relationship(back_populates="user_status")
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["Users"] = relationship(back_populates="user_requests")
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
     
     def __post_init__(self):

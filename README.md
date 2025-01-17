@@ -15,23 +15,61 @@
 
 ## Установка
 
-1. Установите необходимые пакеты:
+1. Установите `uv`:
+[https://docs.astral.sh/uv/getting-started/installation/](https://docs.astral.sh/uv/getting-started/installation/)
+
+2. Создайте `.env` файл для хранения токенов и др.закрытой информации:
+   ```
+   git clone https://github.com/flairmix/tg_atp_remote_bot
+   ```
+3. Клонируйте данный `git` репозиторий:
+   ```
+   git clone https://github.com/flairmix/tg_atp_remote_bot
+   ```
+4. Создайте виртуальное окружение с `uv` 
+   и установите необходимые пакеты:
    ```bash
+   uv venv
    uv pip install -r pyproject.toml
    ```
 
-2. Создайте файл `.env` и добавьте туда токены и идентификатор чата:
-   ```bash
-   TELEGRAM_BOT_TOKEN=<ваш_токен>
-   CHAT_ID=<идентификатор_чата>
-   ```
+5. ### Установка portainer
 
-3. Запустите бота:
+    - в папке `opt` создаем `docker-compose.yml`
+    ```bash
+   nano docker-compose.yml
+    ```
+
+    ```yml
+   services:
+   twportainer:
+      image: portainer/portainer-ce:latest
+      container_name: twportainer
+      environment:
+         - TZ=Europe/Moscow
+      volumes:
+         - /var/run/docker.sock:/var/run/docker.sock
+         - /opt/twportainer/portainer_data:/data
+      ports:
+         - "9443:9443"
+      restart: always
+    ```
+    - запускаем `portainer`
+    ```bash
+    sudo docker compose up -d
+    ``` 
+
+    - сервис `portainer` будет доступен по адресу: 
+    https://192.168.88.16:9443
+
+
+
+6. Запустите бота:
    ```bash
    uv run .\tg_bot\main.py
    ```
 
-4. Для запуска api litestar:
+7. Для запуска api litestar:
     ```bash
     uv run uvicorn api.main:app --reload
     ```

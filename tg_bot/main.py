@@ -18,7 +18,7 @@ from telegram.ext import (
     CallbackQueryHandler,
 )
 from database_connection import SessionLocal
-from data.users.model import User, Status
+from data.users.model import Users, User_requests
 from handlers.states import *
 from handlers.button_handlers import button_handler_start, button_handler_cancel, button_handler_date
 from handlers.date_validation import validate_date
@@ -65,7 +65,7 @@ async def start(update: Update, context: CallbackContext) -> None:
 
 
 # Функция для обработки выбора опции из второго меню
-async def choose_status(update: Update, context: CallbackContext) -> int:
+async def choose_User_requests(update: Update, context: CallbackContext) -> int:
 
     keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
 
@@ -73,7 +73,7 @@ async def choose_status(update: Update, context: CallbackContext) -> int:
                                 f"Выберете статус: ", 
                                 reply_markup=InlineKeyboardMarkup(keyboard))
 
-    return SHORTNAME
+    return ID
 
 
 # Функция для получения имени
@@ -82,14 +82,14 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
     context.user_data['name'] = update.message.text
     message_id_username = update.message.message_id
 
-    #check if user with this shortname exist 
+    #check if Users with this id exist 
     session1 = SessionLocal()
     with session1: 
         try:
-            user_current = session1.query(User).filter_by(shortname=str(context.user_data['name']).upper()).first()
+            user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
             if user_current is None:
-                await update.message.reply_text(f"Такого пользователя не найдено, введите свой shortname")
-                return SHORTNAME
+                await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
+                return ID
             
             context.user_data['name'] = update.message.text
             
@@ -109,7 +109,7 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
     return REASON
 
 
-# handle input date from User 
+# handle input date from Users 
 async def get_input_date(update: Update, context: CallbackContext) -> int:
         
     message_id_username = update.message.message_id
@@ -145,7 +145,7 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
     context.user_data['reason'] = update.message.text
 
     message_to_send = (
-        f"{context.user_data['date_creation_request']}: User <{str(context.user_data['name']).upper()}> \n" +
+        f"{context.user_data['date_creation_request']}: Users <{str(context.user_data['name']).upper()}> \n" +
         f"отправил запрос на {context.user_data['choice']} на {context.user_data['request_date']} \n"+
         f"с сообщением: \n" + 
         f"{context.user_data['reason']}")
@@ -154,10 +154,10 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
 
     with session1: 
         try:
-            user_current = session1.query(User).filter_by(shortname=str(context.user_data['name']).upper()).first()
+            user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
 
             if user_current is not None:
-                new_status = Status(
+                new_User_requests = User_requests(
                     work_status = context.user_data['choice'],
                     user_id = user_current.id,
                     date_message = datetime.now(),
@@ -166,7 +166,7 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
                     user=user_current
                     )
             
-            session1.add_all([new_status])
+            session1.add_all([new_User_requests])
             session1.commit()
 
         except Exception:
@@ -192,8 +192,8 @@ if __name__ == "__main__":
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            START: [MessageHandler(~filters.COMMAND, choose_status), callbackhandler_start],
-            SHORTNAME: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_cancel],
+            START: [MessageHandler(~filters.COMMAND, choose_User_requests), callbackhandler_start],
+            ID: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_cancel],
             COMPLEX_DATE: [MessageHandler(filters.TEXT, get_input_date), callbackhandler_cancel],
             REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler_date],
         },
