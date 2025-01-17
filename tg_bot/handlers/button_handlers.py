@@ -28,7 +28,7 @@ async def button_handler_start(update: Update, context: CallbackContext) -> int:
                                     f"Введите свое имя (shortname): ", 
                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                     )
-        return SHORTNAME
+        return ID
     
     
 async def button_handler_cancel(update: Update, context: CallbackContext) -> int:

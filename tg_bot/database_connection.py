@@ -1,7 +1,7 @@
 import os
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker, Session
-from data.users.model import Base, User, Status 
+from data.users.model import Base, Users, User_requests 
 from datetime import datetime, timedelta
 from dataclasses import dataclass
 
@@ -24,32 +24,36 @@ session1 = SessionLocal()
 #testers db
 person_list = []
 
-user1 = User(shortname = "TEST", fullname="TEST Михаил Александрович", email="TEST.donchenko@atp-tlp.ru", 
+user1 = Users(id = "TEST", name="TEST", surname="Donchenko", email="TEST.donchenko@atp-tlp.ru", 
     group="DEV", chat_id=432923144, GRL="KIRA", level="TL2", city="MOS")
 
-user2 =  User(shortname = "GUV", fullname="Gurov Vsevolod", email="Vsevolod.Gurov@atp-tlp.ru", 
+user1_1 = Users(id = "MID", name="Михаил", surname="Donchenko", email="TEST.donchenko@atp-tlp.ru", 
+    group="DEV", chat_id=432923144, GRL="KIRA", level="TL2", city="MOS")
+
+user2 =  Users(id = "GUV", name="Vsevolod", surname="Gurov", email="Vsevolod.Gurov@atp-tlp.ru", 
     group="BIM", chat_id=0, GRL="KIRA", level="TL1", city="MOS")
 
-user3 = User(shortname = "SHKA", fullname="Shkaev Egor", email="Egor.Shkaev@atp-tlp.ru", 
+user3 = Users(id = "SHKA", name="Egor", surname="Shkaev", email="Egor.Shkaev@atp-tlp.ru", 
     group="BIM", chat_id=0, GRL="KIRA", city="SPB", level="TL1")
 
-user4 = User(shortname = "INI", fullname="Ignatiev Nikita", email="Nikita.Ignatiev@atp-tlp.ru", 
+user4 = Users(id = "INI", name="Nikita", surname="Ignatiev", email="Nikita.Ignatiev@atp-tlp.ru", 
     group="OV", chat_id=0, GRL="KIRA", level="PRAK", city="MOS")
 
-user5 = User(shortname = "ADL", fullname="Dolinskiy Alexander", email="Alexander.Dolinskiy@atp-tlp.ru", 
+user5 = Users(id = "ADL", name="Alexander", surname="Dolinskiy", email="Alexander.Dolinskiy@atp-tlp.ru", 
     group="OV", chat_id=0, GRL="KIRA", level="PRAK", city="MOS")
 
-user6 = User(shortname = "PDE", fullname="Perkhalyuk Fedor", email="Fedor.Perkhalyuk@atp-tlp.ru", 
+user6 = Users(id = "PDE", name="Fedor", surname="Perkhalyuk", email="Fedor.Perkhalyuk@atp-tlp.ru", 
     group="VK", chat_id=0, GRL="KIRA", level="-", city="MOS")
 
-user7 = User(shortname = "VAN", fullname="Volodina Anastasia", email="Anastasia.Volodina@atp-tlp.ru", 
+user7 = Users(id = "VAN", name="Anastasia", surname="Volodina", email="Anastasia.Volodina@atp-tlp.ru", 
     group="VK", chat_id=0, GRL="KIRA", level="-", city="MOS")
 
-user8 = User(shortname = "KIRA", fullname="Kirpichnikov Andrey", email="Andrey.Kirpichnikov@atp-tlp.ru", 
+user8 = Users(id = "KIRA", name="Andrey", surname="Kirpichnikov", email="Andrey.Kirpichnikov@atp-tlp.ru", 
     group="HKLS", chat_id=0, GRL="KIRA", level="GRL", city="MOS")
 
 
 person_list.append(user1)
+person_list.append(user1_1)
 person_list.append(user2)
 person_list.append(user3)
 person_list.append(user4)
@@ -63,26 +67,31 @@ with session1:
 
     for person in person_list:
 
-        stmt = select(User).where(User.shortname == person.shortname)
+        stmt = select(Users).where(Users.id == person.id)
         user = session1.execute(stmt).scalars().first()
 
         if user is None:
 
             session1.add_all([person])
             session1.commit()
-        
-            if person.shortname == "TEST":
-                new_status = Status(
-                    work_status = "Remote",
-                    user_id = user.id,
-                    date_message = datetime.now(),
-                    date_for_request = datetime.now() + timedelta(days=1),
-                    message = "hello, i'm sick", 
-                    user=user
-                    )
 
-                session1.add_all([new_status])
-                session1.commit()
+
+with session1:
+
+    stmt = select(Users).where(Users.id == "TEST")
+    user = session1.execute(stmt).scalars().first()
+    
+    new_status = User_requests(
+        work_status = "Remote",
+        user_id = user.id,
+        date_message = datetime.now(),
+        date_for_request = datetime.now() + timedelta(days=1),
+        message = "hello, i'm sick", 
+        user=user
+        )
+
+    session1.add_all([new_status])
+    session1.commit()
 
 
 
