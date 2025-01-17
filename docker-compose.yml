@@ -26,19 +26,19 @@ services:
     env_file:
     - .env
 
-  # tg-bot:
-  #   image: python:3.12
-  #   container_name: tg-bot-remote
-  #   working_dir: /app
-  #   volumes:
-  #     - ./tg_bot:/app
-  #   ports:
-  #     - '8008:8008'
-  #   command: sh -c "pip install uv && uv pip install -r pyproject.toml --system && uv run main.py"
-  #   depends_on:
-  #     - postgres
-  #   env_file:
-  #     - .env
+  tg-bot:
+    image: python:3.12
+    container_name: tg-bot
+    working_dir: /app
+    volumes:
+      - ./tg_bot:/app
+    ports:
+      - '8008:8008'
+    command: sh -c "pip install uv && uv pip install -r pyproject.toml --system && uv run main.py"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
 
   backend:
     image: python:3.12

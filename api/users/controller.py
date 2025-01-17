@@ -52,8 +52,9 @@ class UserController(Controller):
                 "GRL" : user.GRL
                 }
         else:
-            return Response(status_code=404, 
-                            content=f"Users with id <{id}> - not found")
+            return Response(content=f"Users with id <{id}> - not found", 
+                            status_code=204
+                            )
     
 
     @post("/create_user", dependencies={"db": get_db})

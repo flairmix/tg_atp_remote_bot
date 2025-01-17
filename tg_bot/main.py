@@ -17,25 +17,21 @@ from telegram.ext import (
     filters,
     CallbackQueryHandler,
 )
-from database_connection import SessionLocal
-from data.users.model import Users, User_requests
 from handlers.states import *
 from handlers.button_handlers import button_handler_start, button_handler_cancel, button_handler_date
 from handlers.date_validation import validate_date
 
+import requests
+
 import logging
 
-logger = logging.basicConfig(
-    # filename=f'tg_bot/logs/{datetime.now().strftime("%Y-%m-%d__%H-%M-%S")}_log.log',
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
 
 
-
-load_dotenv()
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-CHAT_ID = int(os.getenv('CHAT_ID'))
+# Get chat ID command handler
+async def api_hello_world(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = update.effective_chat.id
+    result = requests.get('http://backend:8000/users/list_users').text
+    await update.message.reply_text(result)
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -79,22 +75,31 @@ async def choose_User_requests(update: Update, context: CallbackContext) -> int:
 # Функция для получения имени
 async def get_shortname(update: Update, context: CallbackContext) -> int:
         
-    context.user_data['name'] = update.message.text
+    context.user_data['name'] = update.message.text.upper()
     message_id_username = update.message.message_id
 
     #check if Users with this id exist 
-    session1 = SessionLocal()
-    with session1: 
-        try:
-            user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
-            if user_current is None:
-                await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
-                return ID
+    user_db = requests.get(f'http://backend:8000/users/{str(context.user_data['name']).upper()}')
+    await update.message.reply_text(f"user_db.status_code {user_db.status_code}")
+
+    if user_db.status_code.is_integer() == 204:
+        await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
+        return ID
             
-            context.user_data['name'] = update.message.text
+
+    
+    # session1 = SessionLocal()
+    # with session1: 
+    #     try:
+    #         user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
+    #         if user_current is None:
+    #             await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
+                # return ID
             
-        except Exception:
-            return START
+            # context.user_data['name'] = update.message.text
+            
+        # except Exception:
+        #     return START
          
     keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS + ["Cancel"]] 
 
@@ -109,7 +114,7 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
     return REASON
 
 
-# handle input date from Users 
+# # handle input date from Users 
 async def get_input_date(update: Update, context: CallbackContext) -> int:
         
     message_id_username = update.message.message_id
@@ -150,27 +155,45 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
         f"с сообщением: \n" + 
         f"{context.user_data['reason']}")
 
-    session1 = SessionLocal()
 
-    with session1: 
-        try:
-            user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
+    try:
+        user_id = str(context.user_data['name']).upper()
 
-            if user_current is not None:
-                new_User_requests = User_requests(
-                    work_status = context.user_data['choice'],
-                    user_id = user_current.id,
-                    date_message = datetime.now(),
-                    message = context.user_data['reason'],
-                    date_for_request = context.user_data['request_date'],
-                    user=user_current
-                    )
+        user_db = requests.get(f'http://backend:8000/users/{user_id}')
+
+        if user_db is not None:
+            requests.post(f'http://backend:8000/users/create_user_request/{user_id}', 
+                          data={
+                                "work_status": context.user_data['choice'],
+                                "user_id": user_id,
+                                "date_for_request": context.user_data['request_date'],
+                                "message": context.user_data['reason']
+                          })
             
-            session1.add_all([new_User_requests])
-            session1.commit()
+    except Exception:
+        pass
 
-        except Exception:
-            pass
+
+
+    # session1 = SessionLocal()
+        # try:
+        #     user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
+
+        #     if user_current is not None:
+        #         new_User_requests = User_requests(
+        #             work_status = context.user_data['choice'],
+        #             user_id = user_current.id,
+        #             date_message = datetime.now(),
+        #             message = context.user_data['reason'],
+        #             date_for_request = context.user_data['request_date'],
+        #             user=user_current
+        #             )
+            
+        #     session1.add_all([new_User_requests])
+        #     session1.commit()
+
+        # except Exception:
+        #     pass
 
     # Отправка данных другому пользователю
     await context.bot.send_message(chat_id=CHAT_ID, text=message_to_send)
@@ -182,6 +205,18 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
 
 
 if __name__ == "__main__":
+
+
+    logger = logging.basicConfig(
+        # filename=f'tg_bot/logs/{datetime.now().strftime("%Y-%m-%d__%H-%M-%S")}_log.log',
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        level=logging.INFO
+    )
+
+    load_dotenv()
+    TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+    CHAT_ID = int(os.getenv('CHAT_ID'))
+
 
     app = Application.builder().token(TOKEN).build()
 
@@ -204,6 +239,7 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("get_chat_id", get_chat_id))
     app.add_handler(CommandHandler("help", help))
+    app.add_handler(CommandHandler("hello_api", api_hello_world))
 
 
     app.run_polling()
