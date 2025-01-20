@@ -52,7 +52,7 @@ class UserController(Controller):
                 "GRL" : user.GRL
                 }
         else:
-            return Response(content=f"Users with id <{id}> - not found", 
+            return Response(content=None, 
                             status_code=204
                             )
     
@@ -135,7 +135,7 @@ class UserController(Controller):
 
 
     @get("/list_users", dependencies={"db": get_db})
-    async def list_users(self, db: Session) -> dict:
+    async def list_users(self, db: Session) -> list:
         """
         Retrieve a list of all users from the database.
         
