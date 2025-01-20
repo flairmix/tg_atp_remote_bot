@@ -85,22 +85,7 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
     if user_db.status_code == 204:
         await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
         return ID
-            
-
-    
-    # session1 = SessionLocal()
-    # with session1: 
-    #     try:
-    #         user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
-    #         if user_current is None:
-    #             await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
-                # return ID
-            
-            # context.user_data['name'] = update.message.text
-            
-        # except Exception:
-        #     return START
-         
+                     
     keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS + ["Cancel"]] 
 
     

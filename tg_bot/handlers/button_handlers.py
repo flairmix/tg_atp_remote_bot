@@ -20,6 +20,14 @@ async def button_handler_start(update: Update, context: CallbackContext) -> int:
                                     reply_markup=InlineKeyboardMarkup(keyboard))
 
 
+    if query.data == "Cancel":
+        await query.message.reply_text("Диалог отменен")
+        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in START_MENU_OPTIONS]
+
+        await query.message.reply_text(f"Добро пожаловать! Нажмите 'Start' для продолжения. ", 
+                                reply_markup=InlineKeyboardMarkup(keyboard))
+        return START  
+
     if query.data in STATUS_OPTIONS:
         context.user_data['choice'] = query.data
         keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
