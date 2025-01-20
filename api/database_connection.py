@@ -1,20 +1,14 @@
 import os
-from dotenv import load_dotenv
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker, Session
-from users.model import Base, User, Status 
+from users.model import Base, Users, User_requests 
 from datetime import datetime, timedelta
-
-# current_dir = os.path.abspath(os.path.dirname(__file__))
-# parent_dir = os.path.dirname(current_dir)
-# db_file = os.path.join(parent_dir, "tutorial.db")
+from dataclasses import dataclass
 
 #sqlite
 # engine = create_engine("sqlite:///tutorial.db", echo=True)
 # SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
-load_dotenv()
 #postgress
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -22,38 +16,86 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 
-
 Base.metadata.create_all(engine)
-
 
 session1 = SessionLocal()
 
 
-#test fill db 
+#testers db
+person_list = []
+
+user1 = Users(id = "TEST", name="TEST", surname="Donchenko", email="TEST.donchenko@atp-tlp.ru", 
+    group="DEV", chat_id=432923144, GRL="KIRA", level="TL2", city="MOS")
+
+user1_1 = Users(id = "MID", name="Михаил", surname="Donchenko", email="TEST.donchenko@atp-tlp.ru", 
+    group="DEV", chat_id=432923144, GRL="KIRA", level="TL2", city="MOS")
+
+user2 =  Users(id = "GUV", name="Vsevolod", surname="Gurov", email="Vsevolod.Gurov@atp-tlp.ru", 
+    group="BIM", chat_id=0, GRL="KIRA", level="TL1", city="MOS")
+
+user3 = Users(id = "SHKA", name="Egor", surname="Shkaev", email="Egor.Shkaev@atp-tlp.ru", 
+    group="BIM", chat_id=0, GRL="KIRA", city="SPB", level="TL1")
+
+user4 = Users(id = "INI", name="Nikita", surname="Ignatiev", email="Nikita.Ignatiev@atp-tlp.ru", 
+    group="OV", chat_id=0, GRL="KIRA", level="PRAK", city="MOS")
+
+user5 = Users(id = "ADL", name="Alexander", surname="Dolinskiy", email="Alexander.Dolinskiy@atp-tlp.ru", 
+    group="OV", chat_id=0, GRL="KIRA", level="PRAK", city="MOS")
+
+user6 = Users(id = "PDE", name="Fedor", surname="Perkhalyuk", email="Fedor.Perkhalyuk@atp-tlp.ru", 
+    group="VK", chat_id=0, GRL="KIRA", level="-", city="MOS")
+
+user7 = Users(id = "VAN", name="Anastasia", surname="Volodina", email="Anastasia.Volodina@atp-tlp.ru", 
+    group="VK", chat_id=0, GRL="KIRA", level="-", city="MOS")
+
+user8 = Users(id = "KIRA", name="Andrey", surname="Kirpichnikov", email="Andrey.Kirpichnikov@atp-tlp.ru", 
+    group="HKLS", chat_id=0, GRL="KIRA", level="GRL", city="MOS")
+
+
+person_list.append(user1)
+person_list.append(user1_1)
+person_list.append(user2)
+person_list.append(user3)
+person_list.append(user4)
+person_list.append(user5)
+person_list.append(user6)
+person_list.append(user7)
+person_list.append(user8)
+
+
 with session1:
 
-    stmt = select(User).where(User.shortname == "TEST")
-    user = session1.execute(stmt).scalars().first()
+    for person in person_list:
 
-    if user is None:
-        current_user = User(
-            shortname = "TEST_BE",
-            fullname = "TEST Михаил Александрович",
-            email = "TEST.donchenko@atp-tlp.ru", 
-            group = "HKLS",
-            GRL = "KIRA"
+        stmt = select(Users).where(Users.id == person.id)
+        user = session1.execute(stmt).scalars().first()
+
+        if user is None:
+
+            session1.add_all([person])
+            session1.commit()
+
+
+with session1:
+
+    stmt = select(Users).where(Users.id == "TEST")
+    user = session1.execute(stmt).scalars().first()
+    
+    new_status = User_requests(
+        work_status = "Remote",
+        user_id = user.id,
+        date_message = datetime.now(),
+        date_for_request = datetime.now() + timedelta(days=1),
+        message = "hello, i'm sick", 
+        user=user
         )
 
-        session1.add_all([current_user])
-        session1.commit()
+    session1.add_all([new_status])
+    session1.commit()
 
-        new_status = Status(
-            work_status = "Remote",
-            user_id = current_user.id,
-            date_message = datetime.now(),
-            date_for_request = datetime.now() + timedelta(days=1),
-            message = "hello, i'm sick"
-            )
 
-        session1.add_all([new_status])
-        session1.commit()
+
+
+
+        
+

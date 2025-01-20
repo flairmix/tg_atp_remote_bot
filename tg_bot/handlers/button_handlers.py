@@ -9,7 +9,6 @@ from telegram.ext import (
 
 from .states import *
 
-
 async def button_handler_start(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
 
@@ -20,6 +19,14 @@ async def button_handler_start(update: Update, context: CallbackContext) -> int:
                                     reply_markup=InlineKeyboardMarkup(keyboard))
 
 
+    if query.data == "Cancel":
+        await query.message.reply_text("Диалог отменен")
+        keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in START_MENU_OPTIONS]
+
+        await query.message.reply_text(f"Добро пожаловать! Нажмите 'Start' для продолжения. ", 
+                                reply_markup=InlineKeyboardMarkup(keyboard))
+        return START  
+
     if query.data in STATUS_OPTIONS:
         context.user_data['choice'] = query.data
         keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in STATUS_OPTIONS + ["Cancel"]] 
@@ -28,6 +35,7 @@ async def button_handler_start(update: Update, context: CallbackContext) -> int:
                                     f"Введите свое имя (shortname): ", 
                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                     )
+        
         return ID
     
     
@@ -61,10 +69,10 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
         context.user_data['date_creation_request'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
         if query.data == "Сегодня":
-            context.user_data['request_date'] = datetime.today()
+            context.user_data['request_date'] = datetime.today().strftime("%Y-%m-%d")
             
         elif query.data == "Завтра":
-            context.user_data['request_date'] = datetime.today() + timedelta(days=1)
+            context.user_data['request_date'] = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
             
         elif query.data == "Другой день":
             await query.message.reply_text(

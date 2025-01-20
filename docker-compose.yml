@@ -28,7 +28,7 @@ services:
 
   tg-bot:
     image: python:3.12
-    container_name: tg-bot-remote
+    container_name: tg-bot
     working_dir: /app
     volumes:
       - ./tg_bot:/app
@@ -40,19 +40,19 @@ services:
     env_file:
       - .env
 
-  # backend:
-  #   image: python:3.12
-  #   container_name: litestar_backend
-  #   working_dir: /app
-  #   volumes:
-  #     - ./api:/app
-  #   ports:
-  #     - '8000:8000'
-  #   command: sh -c "pip install uv && uv pip install -r pyproject.toml --system && uv run uvicorn main:app --host 0.0.0.0 --port 8000"
-  #   depends_on:
-  #     - postgres
-  #   env_file:
-  #     - .env
+  backend:
+    image: python:3.12
+    container_name: litestar_backend
+    working_dir: /app
+    volumes:
+      - ./api:/app
+    ports:
+      - '8000:8000'
+    command: sh -c "pip install uv && uv pip install -r pyproject.toml --system && uv run uvicorn main:app --host 0.0.0.0 --port 8000"
+    depends_on:
+      - postgres
+    env_file:
+      - .env
 
 
 volumes:
