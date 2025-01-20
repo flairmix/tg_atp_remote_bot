@@ -61,10 +61,10 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
         context.user_data['date_creation_request'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
 
         if query.data == "Сегодня":
-            context.user_data['request_date'] = datetime.today()
+            context.user_data['request_date'] = datetime.today().strftime("%Y-%m-%d")
             
         elif query.data == "Завтра":
-            context.user_data['request_date'] = datetime.today() + timedelta(days=1)
+            context.user_data['request_date'] = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
             
         elif query.data == "Другой день":
             await query.message.reply_text(

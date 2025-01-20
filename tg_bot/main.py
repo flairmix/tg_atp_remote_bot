@@ -22,7 +22,7 @@ from handlers.button_handlers import button_handler_start, button_handler_cancel
 from handlers.date_validation import validate_date
 
 import requests
-
+import json
 import logging
 
 
@@ -80,9 +80,9 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
 
     #check if Users with this id exist 
     user_db = requests.get(f'http://backend:8000/users/{str(context.user_data['name']).upper()}')
-    await update.message.reply_text(f"user_db.status_code {user_db.status_code}")
+    logging.info(f"user_db.status_code {user_db.status_code}")
 
-    if user_db.status_code.is_integer() == 204:
+    if user_db.status_code == 204:
         await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
         return ID
             
@@ -121,12 +121,15 @@ async def get_input_date(update: Update, context: CallbackContext) -> int:
     
 
     if validate_date(update.message.text):
-        request_date = datetime.strptime(update.message.text, '%d.%m.%Y')
-        context.user_data['request_date'] = datetime.strptime(update.message.text, '%d.%m.%Y')
-        
+
+        date = datetime(update.message.text)
+
+        context.user_data['request_date'] = date.strftime('%Y-%m-%d')
+        logging.info(f" context.user_data['request_date'] {context.user_data['request_date']}")
+
         await update.message.reply_text(f"Выберете статус: <{context.user_data['choice'] }> \n" +
                                     f"Введите свое имя: <{str(context.user_data['name']).upper() }> \n" +
-                                    f"Введите дату <{datetime.strptime(update.message.text, '%d.%m.%Y').strftime("%Y-%m-%d")}> \n" +
+                                    f"Введите дату <{context.user_data['request_date']}> \n" +
                                     f"Опишите причину: ",
                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                     )
@@ -158,42 +161,37 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
 
     try:
         user_id = str(context.user_data['name']).upper()
+        
+        url_user = f'http://backend:8000/users/{user_id}'
+        url_post = f'http://backend:8000/users/create_user_request/{user_id}'
 
-        user_db = requests.get(f'http://backend:8000/users/{user_id}')
 
-        if user_db is not None:
-            requests.post(f'http://backend:8000/users/create_user_request/{user_id}', 
-                          data={
-                                "work_status": context.user_data['choice'],
-                                "user_id": user_id,
-                                "date_for_request": context.user_data['request_date'],
-                                "message": context.user_data['reason']
-                          })
+        user_db = requests.get(url_user)
+
+        if user_db.status_code != 204:
+            logging.info(f'''user_db.status_code {user_db.status_code},
+                        work_status: context.user_data['choice'] {context.user_data['choice']},
+                         user_id {user_id}, 
+                         context.user_data['reason'] {context.user_data['reason']}"
+                         date {context.user_data['request_date']}'''
+                         )
+
+
+            payload = {
+                "work_status": context.user_data['choice'],
+                "user_id": user_id,
+                "date_for_request": context.user_data['request_date'],
+                "message": context.user_data['reason']
+            }
+            headers = {'Content-Type': 'application/json'}
+            
+            requests.post(url_post, data=json.dumps(payload), headers=headers)
+
+                          
             
     except Exception:
         pass
 
-
-
-    # session1 = SessionLocal()
-        # try:
-        #     user_current = session1.query(Users).filter_by(id=str(context.user_data['name']).upper()).first()
-
-        #     if user_current is not None:
-        #         new_User_requests = User_requests(
-        #             work_status = context.user_data['choice'],
-        #             user_id = user_current.id,
-        #             date_message = datetime.now(),
-        #             message = context.user_data['reason'],
-        #             date_for_request = context.user_data['request_date'],
-        #             user=user_current
-        #             )
-            
-        #     session1.add_all([new_User_requests])
-        #     session1.commit()
-
-        # except Exception:
-        #     pass
 
     # Отправка данных другому пользователю
     await context.bot.send_message(chat_id=CHAT_ID, text=message_to_send)
