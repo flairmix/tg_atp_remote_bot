@@ -9,7 +9,6 @@ from telegram.ext import (
 
 from .states import *
 
-
 async def button_handler_start(update: Update, context: CallbackContext) -> int:
     query = update.callback_query
 
@@ -36,6 +35,7 @@ async def button_handler_start(update: Update, context: CallbackContext) -> int:
                                     f"Введите свое имя (shortname): ", 
                                     reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                     )
+        
         return ID
     
     

@@ -16,15 +16,15 @@ def validate_date(date_str) -> datetime | str:
         # Проверка того, что дата находится в будущем
         if date <= datetime.now():
             logging.error("Wrong date - past")
-            return "Вводимая дата в прошлом"
+            return "Past"
         
         # Проверка того, что дата не попадает на выходные дни
         if date.weekday() in {5, 6}:  # 5 - суббота, 6 - воскресенье
             logging.error("Wrong date - weekend")
-            return "Вводимая дата - выходной"
+            return "Weekend"
     
     except ValueError:
         logging.error("Wrong date - format")
-        return "Неверный формат даты"
+        return "WrongFormat"
     
     return date
