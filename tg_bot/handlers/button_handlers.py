@@ -84,9 +84,11 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
                                               
         elif query.data == "Выбрать несколько дней":
             await query.message.reply_text(
-                                        f"Это пока не работает =) ",
+                                        f"Введите несколько дней подряд в формате: (31.12.2024 - 07.01.2025):",
                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                         )
+            return COMPLEX_DATE
+            
         elif query.data == "Cancel":
             await update.message.reply_text("Диалог отменен")
             return START
