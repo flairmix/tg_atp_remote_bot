@@ -1,7 +1,5 @@
 import os
-
 from dotenv import load_dotenv
-from datetime import datetime, timedelta
 from telegram import (Update, 
                       InlineKeyboardMarkup,
                     InlineKeyboardButton)
@@ -15,15 +13,15 @@ from telegram.ext import (
     filters,
     CallbackQueryHandler,
 )
-from handlers.states import *
-from handlers.button_handlers import button_handler_start, button_handler_cancel, button_handler_date
-from handlers.date_validation import validate_date
-from handlers.user_request import choose_user_request
-
 import requests
-import json
 import logging
 
+from handlers.states import *
+from handlers.button_handlers import button_handler_start, button_handler_cancel, button_handler_date
+from handlers.user_request import choose_user_request
+from handlers.complex_date_handler import get_complex_date
+from handlers.get_reason_handler import get_reason
+from handlers.get_shortname_handler import get_shortname
 
 
 # Get chat ID command handler
@@ -46,7 +44,6 @@ async def get_chat_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(f"Your chat ID is: {chat_id}")
 
 
-
 # Функция для обработки команды /start
 async def start(update: Update, context: CallbackContext) -> None:
 
@@ -57,124 +54,6 @@ async def start(update: Update, context: CallbackContext) -> None:
     
     logging.info(msg="bot succesfully started - state START")
     return START
-
-
-# Функция для получения имени
-async def get_shortname(update: Update, context: CallbackContext) -> int:
-        
-    context.user_data['name'] = update.message.text.upper()
-    messages_ids.add(update.message.message_id)
-
-    #check if Users with this id exist 
-    user_db = requests.get(f'http://backend:8000/users/{str(context.user_data['name']).upper()}')
-    logging.info(f"user_db.status_code {user_db.status_code}")
-
-    if user_db.status_code == 204:
-        await update.message.reply_text(f"Такого пользователя не найдено, введите свой id")
-        return ID
-                     
-    keyboard = [[InlineKeyboardButton(option, callback_data=f"{option}") ] for option in DATE_MENU_OPTIONS + ["Cancel"]] 
-
-    await update.message.reply_text(f"Выберете дату: ", 
-                                    reply_markup=InlineKeyboardMarkup(keyboard))
-    messages_ids.add(update.message.message_id)
-
-    return REASON
-
-
-# handle input date from Users 
-async def get_input_date(update: Update, context: CallbackContext) -> int:
-        
-    messages_ids.add(update.message.message_id)
-    date = validate_date(update.message.text)
-
-    if date is not None and type(date) == datetime:
-
-        date_format = date.strftime('%Y-%m-%d')
-        context.user_data['request_date'] = date_format
-        logging.info(f" context.user_data['request_date'] {context.user_data['request_date']}")
-
-        await update.message.reply_text(f"Выберете статус: <{context.user_data['choice'] }> \n" +
-                                    f"Введите свое имя: <{str(context.user_data['name']).upper() }> \n" +
-                                    f"Введите дату <{context.user_data['request_date']}> \n" +
-                                    f"Опишите причину: ",
-                                    reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                    )
-        return REASON
-    
-    elif ((date is not None) and (type(date) == str) and date == "Past"):
-        await update.message.reply_text(f"Вводимая дата в прошлом, введите корректную дату \n" + 
-                                        f"Введите дату в формате: ddmmYYYY (31.12.2024)",
-                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                        )
-        return COMPLEX_DATE
-    
-    elif ((date is not None) and (type(date) == str) and date == "Weekend"):
-        await update.message.reply_text(f"Вводимая дата - выходной день, введите корректную дату \n" + 
-                                        f"Введите дату в формате: ddmmYYYY (31.12.2024)",
-                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                        )
-        return COMPLEX_DATE
-    
-    else:
-        await update.message.reply_text(f"Неправильно, попробуй еще раз \n" + 
-                                        f"Введите дату в формате: ddmmYYYY (31.12.2024)",
-                                        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
-                                        )
-        return COMPLEX_DATE
-    
-
-
-# Функция для получения причины REASON
-async def get_reason(update: Update, context: CallbackContext) -> int:
-
-    context.user_data['reason'] = update.message.text
-
-    message_to_send = (
-        f"{context.user_data['date_creation_request']}: User <{str(context.user_data['name']).upper()}> \n" +
-        f"отправил запрос на {context.user_data['choice']} на <{context.user_data['request_date']}> \n"+
-        f"с сообщением: \n" + 
-        f"<{context.user_data['reason']}>")
-
-
-    try:
-        user_id = str(context.user_data['name']).upper()
-        
-        url_user = f'http://backend:8000/users/{user_id}'
-        url_post = f'http://backend:8000/users/create_user_request/{user_id}'
-
-        user_db = requests.get(url_user)
-
-        if user_db.status_code != 204:
-            logging.info(f'''user_db.status_code {user_db.status_code},
-                        work_status: context.user_data['choice'] {context.user_data['choice']},
-                         user_id {user_id}, 
-                         context.user_data['reason'] {context.user_data['reason']}"
-                         date {context.user_data['request_date']}'''
-                         )
-
-
-            payload = {
-                "work_status": context.user_data['choice'],
-                "user_id": user_id,
-                "date_for_request": context.user_data['request_date'],
-                "message": context.user_data['reason']
-            }
-            headers = {'Content-Type': 'application/json'}
-            
-            requests.post(url_post, data=json.dumps(payload), headers=headers)
-
-    except Exception:
-        pass
-
-
-    # Отправка данных другому пользователю
-    await context.bot.send_message(chat_id=CHAT_ID, text=message_to_send)
-    await update.message.reply_text(message_to_send +"\n\n Благодарим вас! Возвращаемся в главное меню.")
-
-    # Возвращаемся в главное меню
-    return await start(update, context)
-
 
 
 if __name__ == "__main__":
@@ -203,7 +82,7 @@ if __name__ == "__main__":
         states={
             START: [MessageHandler(~filters.COMMAND, choose_user_request), callbackhandler_start],
             ID: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_cancel],
-            COMPLEX_DATE: [MessageHandler(filters.TEXT, get_input_date), callbackhandler_cancel],
+            COMPLEX_DATE: [MessageHandler(filters.TEXT, get_complex_date), callbackhandler_cancel],
             REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler_date],
         },
         fallbacks=[], 
