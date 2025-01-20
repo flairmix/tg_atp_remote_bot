@@ -1,19 +1,30 @@
 from datetime import datetime
+import logging 
 
 
-def validate_date(date_str):
+logger = logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
+
+def validate_date(date_str) -> datetime | str:
     # Проверка формата даты
     try:
         date = datetime.strptime(date_str, '%d.%m.%Y')
+       
+        # Проверка того, что дата находится в будущем
+        if date <= datetime.now():
+            logging.error("Wrong date - past")
+            return "Вводимая дата в прошлом"
+        
+        # Проверка того, что дата не попадает на выходные дни
+        if date.weekday() in {5, 6}:  # 5 - суббота, 6 - воскресенье
+            logging.error("Wrong date - weekend")
+            return "Вводимая дата - выходной"
+    
     except ValueError:
-        return False
+        logging.error("Wrong date - format")
+        return "Неверный формат даты"
     
-    # Проверка того, что дата находится в будущем
-    if date <= datetime.now():
-        return False
-    
-    # Проверка того, что дата не попадает на выходные дни
-    if date.weekday() in {5, 6}:  # 5 - суббота, 6 - воскресенье
-        return False
-    
-    return True
+    return date

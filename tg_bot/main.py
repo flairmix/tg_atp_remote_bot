@@ -103,13 +103,12 @@ async def get_shortname(update: Update, context: CallbackContext) -> int:
 async def get_input_date(update: Update, context: CallbackContext) -> int:
         
     message_id_username = update.message.message_id
-    
+    date = validate_date(update.message.text)
 
-    if validate_date(update.message.text):
+    if date is not None and type(date) == datetime:
 
-        date = datetime(update.message.text)
-
-        context.user_data['request_date'] = date.strftime('%Y-%m-%d')
+        date_format = date.strftime('%Y-%m-%d')
+        context.user_data['request_date'] = date_format
         logging.info(f" context.user_data['request_date'] {context.user_data['request_date']}")
 
         await update.message.reply_text(f"Выберете статус: <{context.user_data['choice'] }> \n" +
