@@ -3,10 +3,13 @@ from litestar import Controller, get, post, put, patch, delete, Request, Respons
 from litestar.dto import DTOData
 from typing import Generator
 from database_connection import SessionLocal
+import uuid
 
 from users.model import Users, User_requests
 from sqlalchemy.orm import Session
-from sqlalchemy import text, select
+from sqlalchemy import text, select, update
+from sqlalchemy.exc import SQLAlchemyError
+
 
 # Dependency to provide a database session
 def get_db() -> Generator[Session, None, None]:
@@ -120,7 +123,8 @@ class UserController(Controller):
                 message= data.get('message'),
                 date_for_request = data.get('date_for_request'),
                 user_id = data.get('id'),
-                user = user_db
+                user = user_db,
+                approve_grl=False
             )
 
             db.add_all([new_user_request])
@@ -187,13 +191,29 @@ class UserController(Controller):
                 "user_id" : request.user_id, 
                 "date_for_request" : request.date_for_request, 
                 "message" : request.message, 
-                "date_message" : request.date_message
+                "date_message" : request.date_message,
+                "approve_grl" : request.approve_grl
                 }
             )
 
         return result
 
-    
+    @put(path="approve_request_by_grl/{request_id:uuid}", dependencies={"db": get_db})
+    async def approve_request_by_grl(self, db: Session, request_id:uuid.UUID) -> None:
+
+        try:
+            db.execute(update(User_requests).where(User_requests.id == request_id).values(approve_grl=True))
+            db.commit()
+            
+            return Response(status_code=200, content=f"Request {request_id} approved successfully.")
+        
+        except SQLAlchemyError as e:
+            db.rollback()
+            return Response(status_code=500, content=f"Internal Server Error: {e}")
+        
+        except Exception as e:
+            db.rollback()
+            return Response(status_code=400, content=f"Bad Request: {e}")
 
     @delete("/delete_user/{id:str}", dependencies={"db": get_db})
     async def delete_user(self, db: Session, id:str) -> None:

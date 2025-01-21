@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy import ForeignKey, String, Date, Time, DateTime
+from sqlalchemy import ForeignKey, String, Date, DateTime, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, MappedAsDataclass, relationship
 from datetime import date
 from uuid import uuid4
@@ -12,7 +12,6 @@ class Base(MappedAsDataclass, DeclarativeBase):
 @dataclass
 class Users(Base):
     __tablename__ = "users"
-    # shortname: Mapped[str] = mapped_column(String, unique=True) 
     id: Mapped[str] = mapped_column(String, unique=True, primary_key=True) 
     name: Mapped[str] = mapped_column(String, nullable=False)
     surname: Mapped[str] = mapped_column(String, nullable=False)
@@ -22,7 +21,7 @@ class Users(Base):
     GRL: Mapped[str] = mapped_column(String, nullable=False)
     city: Mapped[Optional[str]] = mapped_column(String, nullable=False)
     chat_id: Mapped[Optional[int]] = mapped_column(String, nullable=True)
-    # id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
+    chat_id_grl: Mapped[Optional[int]] = mapped_column(String, nullable=True)
     
     user_requests: Mapped[List["User_requests"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", default_factory=list
@@ -42,7 +41,9 @@ class User_requests(Base):
     date_for_request: Mapped[date] = mapped_column(Date)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id"))
     user: Mapped["Users"] = relationship(back_populates="user_requests")
+    approve_grl: Mapped[bool] = mapped_column(Boolean, nullable=True)
     id: Mapped[UUID] = mapped_column(UUID(as_uuid=True), default_factory=uuid4, primary_key=True)
+
     
     def __post_init__(self):
         if self.user is None:
