@@ -105,7 +105,6 @@ class UserController(Controller):
                             content=
                             f"Users with id <{data.get('id')}> - already exist")
         
-
     @post("/create_user_request/{user_id:str}", dependencies={"db": get_db})
     async def create_user_request(self, 
                           db: Session, 
@@ -136,7 +135,6 @@ class UserController(Controller):
             return Response(status_code=409, 
                             content=
                             f"Error with creating user_request")
-
 
     @get("/list_users", dependencies={"db": get_db})
     async def list_users(self, db: Session) -> list:
