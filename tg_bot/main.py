@@ -66,8 +66,6 @@ if __name__ == "__main__":
 
     load_dotenv()
     TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-    CHAT_ID = int(os.getenv('CHAT_ID'))
-
 
     app = Application.builder().token(TOKEN).build()
 

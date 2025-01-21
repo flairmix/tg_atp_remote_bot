@@ -12,15 +12,12 @@ from telegram.ext import (
     CallbackContext
 )
 
-import logging
-
 from .states import *
-from .date_validation import validate_date
 
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-CHAT_ID = int(os.getenv('CHAT_ID'))
+CHAT_ID = int(os.getenv('CHAT_ID_MID'))
 
 # Функция для получения причины REASON
 async def get_reason(update: Update, context: CallbackContext) -> int:
