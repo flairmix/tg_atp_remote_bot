@@ -43,23 +43,18 @@ async def get_reason(update: Update, context: CallbackContext) -> int:
         user_db = requests.get(url_user)
 
         if user_db.status_code != 204:
-            logging.info(f'''user_db.status_code {user_db.status_code},
-                        work_status: context.user_data['choice'] {context.user_data['choice']},
-                         user_id {user_id}, 
-                         context.user_data['reason'] {context.user_data['reason']}"
-                         date {context.user_data['request_date']}'''
-                         )
 
+            for date in context.user_data['request_date']:
 
-            payload = {
-                "work_status": context.user_data['choice'],
-                "user_id": user_id,
-                "date_for_request": context.user_data['request_date'],
-                "message": context.user_data['reason']
-            }
-            headers = {'Content-Type': 'application/json'}
-            
-            requests.post(url_post, data=json.dumps(payload), headers=headers)
+                payload = {
+                    "work_status": context.user_data['choice'],
+                    "user_id": user_id,
+                    "date_for_request": date,
+                    "message": context.user_data['reason']
+                }
+                headers = {'Content-Type': 'application/json'}
+                
+                requests.post(url_post, data=json.dumps(payload), headers=headers)
 
     except Exception:
         pass

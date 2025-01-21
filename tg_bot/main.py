@@ -19,7 +19,7 @@ import logging
 from handlers.states import *
 from handlers.button_handlers import button_handler_start, button_handler_cancel, button_handler_date
 from handlers.user_request import choose_user_request
-from handlers.complex_date_handler import get_complex_date
+from handlers.complex_date_handler import get_complex_date, get_interval_date
 from handlers.get_reason_handler import get_reason
 from handlers.get_shortname_handler import get_shortname
 
@@ -83,6 +83,7 @@ if __name__ == "__main__":
             START: [MessageHandler(~filters.COMMAND, choose_user_request), callbackhandler_start],
             ID: [MessageHandler(filters.TEXT, get_shortname), callbackhandler_cancel],
             COMPLEX_DATE: [MessageHandler(filters.TEXT, get_complex_date), callbackhandler_cancel],
+            INTERVAL_DATE: [MessageHandler(filters.TEXT, get_interval_date), callbackhandler_cancel],
             REASON: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_reason), callbackhandler_date],
         },
         fallbacks=[], 

@@ -66,13 +66,13 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
 
     if query.data in DATE_MENU_OPTIONS:
                             
-        context.user_data['date_creation_request'] = datetime.today().strftime("%Y-%m-%d %H:%M:%S")
+        context.user_data['date_creation_request'] = [datetime.today().strftime("%Y-%m-%d %H:%M:%S")]
 
         if query.data == "Сегодня":
-            context.user_data['request_date'] = datetime.today().strftime("%Y-%m-%d")
+            context.user_data['request_date'] = [datetime.today().strftime("%Y-%m-%d")]
             
         elif query.data == "Завтра":
-            context.user_data['request_date'] = (datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")
+            context.user_data['request_date'] = [(datetime.today() + timedelta(days=1)).strftime("%Y-%m-%d")]
             
         elif query.data == "Другой день":
             await query.message.reply_text(
@@ -87,7 +87,7 @@ async def button_handler_date(update: Update, context: CallbackContext) -> int:
                                         f"Введите несколько дней подряд в формате: (31.12.2024 - 07.01.2025):",
                                         reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Cancel", callback_data=f"Cancel")]])
                                         )
-            return COMPLEX_DATE
+            return INTERVAL_DATE
             
         elif query.data == "Cancel":
             await update.message.reply_text("Диалог отменен")

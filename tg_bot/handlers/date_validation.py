@@ -18,11 +18,11 @@ def validate_date(date_str) -> datetime | str:
             logging.error("Wrong date - past")
             return "Past"
         
-        # Проверка того, что дата не попадает на выходные дни
-        if date.weekday() in {5, 6}:  # 5 - суббота, 6 - воскресенье
+        # Проверка того, что дата не попадает на выходные дни  # 5 - суббота, 6 - воскресенье
+        elif date.weekday() in {5, 6}: 
             logging.error("Wrong date - weekend")
             return "Weekend"
-    
+        
     except ValueError:
         logging.error("Wrong date - format")
         return "WrongFormat"
