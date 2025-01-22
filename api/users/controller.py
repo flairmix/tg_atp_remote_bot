@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text, select, update
 from sqlalchemy.exc import SQLAlchemyError
 
+from services.tg_api import send_message
 
 # Dependency to provide a database session
 def get_db() -> Generator[Session, None, None]:
@@ -92,7 +93,8 @@ class UserController(Controller):
                 city = data.get('city'), 
                 group = data.get('group'),
                 GRL = data.get('GRL'),
-                chat_id = 0
+                chat_id = 0,
+                chat_id_grl = 0
             )
 
             db.add_all([new_user])
@@ -164,8 +166,11 @@ class UserController(Controller):
                 "surname" : user.surname, 
                 "email" : user.email, 
                 "group" : user.group, 
+                "chat_id" : user.chat_id, 
                 "GRL" : user.GRL,
+                "level" : user.level,
                 "city" : user.city,
+                "chat_id_grl" : user.chat_id_grl
                 }
             )
 
@@ -202,6 +207,21 @@ class UserController(Controller):
         try:
             db.execute(update(User_requests).where(User_requests.id == request_id).values(approve_grl=True))
             db.commit()
+
+            request = select(User_requests).where(User_requests.id == request_id)
+            user_request = db.execute(request).scalars().first()
+
+            user = select(Users).where(Users.id == user_request.user_id)
+            user_chat_id = db.execute(user).scalars().first().chat_id
+            
+            message = (
+                f"Ваш запрос на {user_request.work_status} \n" + 
+                f"для даты {user_request.date_for_request} \n" +
+                "Одобрен"
+                )
+
+            await send_message(user_chat_id, message)
+
             
             return Response(status_code=200, content=f"Request {request_id} approved successfully.")
         
@@ -241,4 +261,9 @@ class UserController(Controller):
         else:
             return Response(status_code=204,
                             content=f"Users <{id}> not found")
-                            
+
+
+# @listener("user_request_approved")
+# async def send_approve_handler(self, chat_id: int) -> None:
+
+#     await tg_app.
