@@ -92,7 +92,8 @@ class UserController(Controller):
                 city = data.get('city'), 
                 group = data.get('group'),
                 GRL = data.get('GRL'),
-                chat_id = 0
+                chat_id = 0,
+                chat_id_grl = 0
             )
 
             db.add_all([new_user])
@@ -164,8 +165,11 @@ class UserController(Controller):
                 "surname" : user.surname, 
                 "email" : user.email, 
                 "group" : user.group, 
+                "chat_id" : user.chat_id, 
                 "GRL" : user.GRL,
+                "level" : user.level,
                 "city" : user.city,
+                "chat_id_grl" : user.chat_id_grl
                 }
             )
 
