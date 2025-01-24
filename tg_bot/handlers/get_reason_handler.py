@@ -17,7 +17,7 @@ from .states import *
 
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-CHAT_ID = int(os.getenv('CHAT_ID_MID'))
+CHAT_ID = int(os.getenv('CHAT_ID_KIRA'))
 
 # Функция для получения причины REASON
 async def get_reason(update: Update, context: CallbackContext) -> int:
